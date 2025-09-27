@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Raya24</title>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jwt-decode@3.1.2/build/jwt-decode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.55.2/phaser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <script src="main.js" type="module"></script>
+  <style>
+      @font-face {
+        font-family: 'Inter';
+        src: url('fonts/Inter-Regular.ttf');
+      }
+      @font-face {
+        font-family: 'Brothers';
+        src: url('fonts/Brothers-Bold.ttf');
+      }
+      body {
+        font-family: 'Brothers';
+        body { margin: 0; }
+        background-color: black;
+      }
+      canvas {
+        display: block;
+      }
+      #confetti {
+        position: absolute;
+        top: 0;
+        left: 0;
+        pointer-events: none;
+      }
+  </style>
+</head>
+<body>
+  <div id="phaser-container"></div>
+  <canvas id="confetti"></canvas>
+</body>
+<script>
+//   const urlParams = new URLSearchParams(window.location.search);
+//   const token = urlParams.get('token') || localStorage.getItem("token");
+
+//   try {
+//     if (token !== null) {
+//       // var decoded_token = jwt_decode(token);
+//       // var tokenData = JSON.stringify({
+//       //   userId: parseInt(decoded_token.userId),
+//       //   token: token
+//       // });
+
+//       // StoreTokenToCookie(tokenData);
+//       StoreTokenToCookie(token);
+//     }
+//     else
+//     {
+//       RemoveTokenFromCookie();
+//     }
+//   } catch (error) {
+//     console.error('An error occurred:', error);
+//   } finally {
+//     history.replaceState(null, document.title, window.location.href.split('?')[0]);
+//   }
+
+//   function StoreTokenToCookie(tokenData)
+//   {
+//     localStorage.setItem("token", tokenData);
+//   }
+
+//   function RemoveTokenFromCookie()
+//   {
+//     localStorage.removeItem("token");
+//   }
+</script>
+</html>
