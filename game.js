@@ -11,7 +11,7 @@ export default class GameScene extends Phaser.Scene {
   }
 
   init(data) {
-    this.balance = data.balance;
+    this.balance = data.balance ?? 1000;
   }
 
   preload() {
@@ -19,17 +19,13 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('item', 'images/item.png');
 
     const suits = ["diamonds", "clubs", "hearts", "spades"];
-      const ranks = ["ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king"];
-
-      suits.forEach(suit => {
-        ranks.forEach(rank => {
-          this.load.image(`${rank}_of_${suit}`, `images/cards/${rank}_of_${suit}.png`);
-        });
-      });
+    const ranks = ["ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king"];
+    suits.forEach(suit => ranks.forEach(rank => {
+      this.load.image(`${rank}_of_${suit}`, `images/cards/${rank}_of_${suit}.png`);
+    }));
 
     this.load.image('card_back', 'images/card_back.png');
     this.load.image('up_arrow', 'images/up_arrow.png');
-
     this.load.image('down_arrow', 'images/down_arrow.png');
     this.load.image('bet_higher', 'images/bet_higher.png');
     this.load.image('bet_lower', 'images/bet_lower.png');
@@ -42,48 +38,55 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
+    const confettiCanvas = document.getElementById('confetti');
+    this.myConfetti = confetti.create(confettiCanvas, { resize: true, useWorker: true });
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // play bgm safely
     this.sound.unlock();
-    var music = this.sound.add('bgm');
-    
+    this.bgm = this.sound.add('bgm', { loop: true });
     if (!this.sound.locked) {
-      music.play();
+      this.bgm.play();
+    } else {
+      this.sound.once(Phaser.Sound.Events.UNLOCKED, () => { this.bgm.play(); });
     }
-    else {
-      this.sound.once(Phaser.Sound.Events.UNLOCKED, () => {
-        music.play();
-      })
-    }
-      
+
+    // background full screen
     this.add.image(width / 2, height / 2, 'background').setDisplaySize(1920, 1080);
 
-    // === Layout sizes ===
-    this.contentWidth = width * 0.75;
-    this.navWidth = width * 0.25;
-    this.contentHeight = height;
+    // Content column size (portrait)
+    this.contentWidth = 576;
+    this.contentHeight = 1080;
 
-    // === Content containers (anchored left) ===
-    this.shopContainer = this.add.container(0, 0).setVisible(true);
-    this.hiloContainer = this.add.container(0, 0).setVisible(false);
-    this.coinFlipContainer = this.add.container(0, 0).setVisible(false);
+    // center content column horizontally
+    const contentX = Math.round((width - this.contentWidth) / 2);
 
+    // nav area starts at right of content
+    this.navWidth = Math.max(200, width - (contentX + this.contentWidth));
+    const navX = this.contentWidth + 250;
+
+    // containers (positioned at contentX so children use same local coords)
+    this.shopContainer = this.add.container(contentX, 0).setVisible(true);
+    this.hiloContainer = this.add.container(contentX, 0).setVisible(false);
+    this.coinFlipContainer = this.add.container(contentX, 0).setVisible(false);
+
+    // build screens
     this.setupShop();
     this.setupHilo();
     this.setupCoinFlip();
 
-    this.createRightNav();
+    // right nav (floating circles)
+    this.createRightNav(navX);
   }
 
+  // press / click effect: move down while pressed and play click sound
   addPressEffect(obj, pairedText = null, offset = 5) {
     obj.originalY = obj.y;
-    if (pairedText && pairedText.originalY === undefined) {
-      pairedText.originalY = pairedText.y;
-    }
+    if (pairedText && pairedText.originalY === undefined) pairedText.originalY = pairedText.y;
 
     obj.on('pointerdown', () => {
-      // move down on press
       obj.y = obj.originalY + offset;
       if (pairedText) pairedText.y = pairedText.originalY + offset;
 
@@ -103,31 +106,36 @@ export default class GameScene extends Phaser.Scene {
     obj.on('pointerout', reset);
   }
 
-  createRightNav() {
-    this.navContainer = this.add.container(this.contentWidth, 0);
-
-    const bg = this.add.rectangle(0, 0, this.navWidth, this.contentHeight, 0x222222, 0.9)
-      .setOrigin(0, 0);
-    this.navContainer.add(bg);
+  createRightNav(navX) {
+    this.navContainer = this.add.container(navX, 0);
 
     const tabNames = ["Shop", "Hilo", "Coin Flip"];
     const containers = [this.shopContainer, this.hiloContainer, this.coinFlipContainer];
 
-    tabNames.forEach((name, i) => {
-      const btn = this.add.text(this.navWidth / 2, 150 + i * 80, name, {
-        font: "bold 28px Brothers",
-        backgroundColor: "#333",
-        color: "#fff",
-        padding: { x: 12, y: 6 },
-        align: "center"
-      })
-        .setOrigin(0.5, 0)
-        .setInteractive({ useHandCursor: true })
-        .on("pointerdown", () => {
-          containers.forEach((c, idx) => c.setVisible(idx === i));
-        });
+    const circleRadius = 35;
+    const spacingY = 85;
+    const startY = 80;
 
-      this.navContainer.add(btn);
+    tabNames.forEach((name, i) => {
+      const cx = Math.round(this.navWidth / 2);
+      const cy = startY + i * spacingY;
+
+      const circle = this.add.circle(cx, cy, circleRadius, 0x333333)
+        .setStrokeStyle(4, 0xffffff)
+        .setInteractive({ useHandCursor: true })
+        .on('pointerdown', () => containers.forEach((c, idx) => c.setVisible(idx === i)));
+
+      const label = this.add.text(cx, cy, name, {
+        font: "12px Brothers",
+        color: "#ffffff",
+        align: "center",
+        wordWrap: { width: circleRadius * 1.8 }
+      }).setOrigin(0.5);
+
+      this.addPressEffect(circle, label, 4);
+
+      this.navContainer.add(circle);
+      this.navContainer.add(label);
     });
   }
 
@@ -137,7 +145,7 @@ export default class GameScene extends Phaser.Scene {
     const startX = 20;
     const startY = 20;
 
-    // Shop panel background
+    // background panel (light but slightly visible)
     const bg = this.add.rectangle(startX, startY, panelWidth - 40, panelHeight - 40, 0xffffff, 0.65)
       .setOrigin(0)
       .setStrokeStyle(2, 0x000000);
@@ -145,13 +153,16 @@ export default class GameScene extends Phaser.Scene {
 
     const scrollAreaHeight = panelHeight - 80;
 
-    // Scrollable mask
-    const maskGraphics = this.make.graphics();
-    maskGraphics.fillStyle(0xffffff);
+    // Use add.graphics() (must be in display list) for geometry mask
+    const maskGraphics = this.add.graphics();
+    maskGraphics.fillStyle(0xffffff, 1);
     maskGraphics.fillRect(startX + 10, startY + 10, panelWidth - 60, scrollAreaHeight);
+    // Hide the graphics itself so it doesn't show on screen
+    maskGraphics.setVisible(false);
+
     const mask = maskGraphics.createGeometryMask();
 
-    // Scrollable content container (center aligned)
+    // Scrollable content container (center aligned inside panel area)
     const content = this.add.container(startX + panelWidth / 2, startY + scrollAreaHeight / 2);
     content.setMask(mask);
     this.shopContainer.add(content);
@@ -162,7 +173,7 @@ export default class GameScene extends Phaser.Scene {
     const itemSize = 150;
     const spacing = 30;
 
-    for (let i = 0; i < 9; i++) {
+    for (let i = 0; i < cols * rows; i++) {
       const col = i % cols;
       const row = Math.floor(i / cols);
 
@@ -171,22 +182,23 @@ export default class GameScene extends Phaser.Scene {
 
       const itemContainer = this.add.container(x, y);
 
-      // Background box
-      const box = this.add.rectangle(0, 0, itemSize, itemSize, 0xdddddd)
+      // Card-like background for each item (higher contrast)
+      const box = this.add.rectangle(0, 0, itemSize, itemSize, 0xf2f2f2)
         .setOrigin(0.5)
-        .setStrokeStyle(2, 0x000000);
+        .setStrokeStyle(2, 0x222222);
       itemContainer.add(box);
 
-      // Item image (use single key 'item' for now)
-      const imgKey = `item${i + 1}`; // if you preload item1..item9, they'll be used; fallback to 'item' if not found
-      const img = this.textures.exists(imgKey) ? this.add.image(0, -30, imgKey) : this.add.image(0, -30, 'item');
+      // Item image (use single key 'item' for fallback)
+      const imgKey = `item${i + 1}`;
+      const img = this.textures.exists(imgKey) ? this.add.image(0, -20, imgKey) : this.add.image(0, -20, 'item');
       img.setDisplaySize(80, 80).setOrigin(0.5);
       itemContainer.add(img);
 
       // Item name
       const name = this.add.text(0, 30, `Item ${i + 1}`, {
         font: "16px Brothers",
-        color: "#000"
+        color: "#111111",
+        align: "center"
       }).setOrigin(0.5);
       itemContainer.add(name);
 
@@ -197,7 +209,7 @@ export default class GameScene extends Phaser.Scene {
       }).setOrigin(0.5);
       itemContainer.add(price);
 
-      // Buy button (full width inside box, bottom with 5px padding)
+      // Buy button
       const btnHeight = 32;
       const paddingBottom = 5;
       const btnY = itemSize / 2 - (btnHeight / 2) - paddingBottom;
@@ -211,6 +223,7 @@ export default class GameScene extends Phaser.Scene {
 
       buyBtnBg.on("pointerdown", () => {
         console.log(`Purchased Item ${i + 1}`);
+        // hook purchase logic here
       });
 
       itemContainer.add(buyBtnBg);
@@ -219,10 +232,18 @@ export default class GameScene extends Phaser.Scene {
       content.add(itemContainer);
     }
 
-    // Scroll with mouse wheel
+    // quick debug: how many children were added to content?
+    console.log('shop content children count:', content.list.length);
+
+    // Scroll with mouse wheel (only when shopContainer visible)
     this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
       if (!this.shopContainer.visible) return;
       content.y -= deltaY * 0.5;
+      // clamp scroll so content won't scroll infinitely (optional)
+      const maxScroll = (itemSize + spacing) * (rows / 2);
+      const minY = startY + scrollAreaHeight / 2 - maxScroll;
+      const maxY = startY + scrollAreaHeight / 2 + maxScroll;
+      content.y = Phaser.Math.Clamp(content.y, minY, maxY);
     });
   }
 
@@ -232,20 +253,20 @@ export default class GameScene extends Phaser.Scene {
     const startX = 20;
     const startY = 20;
 
+    // panel background
     const bg = this.add.rectangle(startX, startY, panelWidth - 40, panelHeight - 40, 0xffffff, 0.65)
-      .setOrigin(0)
-      .setStrokeStyle(2, 0x000000);
+      .setOrigin(0).setStrokeStyle(2, 0x000000);
     this.hiloContainer.add(bg);
 
-    // inner content area
+    // inner area
     const contentLeft = startX + 20;
     const contentTop = startY + 20;
     const contentW = panelWidth - 60;
     const contentH = panelHeight - 80;
-
     const centerX = contentLeft + contentW / 2;
     const centerY = contentTop + contentH / 2 - 30;
 
+    // helper for card keys
     const suits = ["diamonds", "clubs", "hearts", "spades"];
     const ranks = ["ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king"];
     const indexToKey = (index) => {
@@ -255,35 +276,7 @@ export default class GameScene extends Phaser.Scene {
     };
     const getRandomIndex = () => Math.floor(Math.random() * 52);
 
-    // === Card (start random) ===
-    let currentIndex = getRandomIndex();
-    const cardKey = indexToKey(currentIndex);
-    const card = this.add.image(centerX, centerY, cardKey)
-      .setOrigin(0.5);
-    this.hiloContainer.add(card);
-
-    // enforce fixed display size ratio
-    const cardW = 160;
-    const cardH = 240;
-    const baseWidth = card.width;
-    const baseHeight = card.height;
-    const scaleX = cardW / baseWidth;
-    const scaleY = cardH / baseHeight;
-    card.setScale(scaleX, scaleY);
-
-    // Skip button
-    const skipY = centerY + 150;
-    const skipBtn = this.add.rectangle(centerX, skipY, 120, 44, 0x6666aa)
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    const skipText = this.add.text(centerX, skipY, "Skip", {
-      font: "20px Brothers",
-      color: "#ffffff"
-    }).setOrigin(0.5);
-    this.addPressEffect(skipBtn, skipText);
-    this.hiloContainer.add([skipBtn, skipText]);
-
-    // Odds table
+    // odds table
     const cardRatios = [
       { higher: 1.06, lower: null },
       { higher: 1.15, lower: 12.75 },
@@ -301,94 +294,274 @@ export default class GameScene extends Phaser.Scene {
     ];
     const getRank = (index) => index % 13;
 
-    // Left / Right arrows + rate texts
-    const arrowOffsetX = Math.min(220, contentW * 0.32);
-    const arrowY = centerY;
+    // === Card (start random) ===
+    let currentIndex = getRandomIndex();
+    const cardKey = indexToKey(currentIndex);
+    const card = this.add.image(centerX, centerY - 100, cardKey).setOrigin(0.5);
+    this.hiloContainer.add(card);
 
-    const leftRateStyle = { font: "bold 72px Brothers", color: "#ff4d4d", align: 'center' };
-    const leftArrowImg = this.add.image(centerX - arrowOffsetX, arrowY, 'down_arrow')
-      .setDisplaySize(68, 48)
-      .setOrigin(0.5)
-    const leftRateText = this.add.text(centerX - arrowOffsetX, arrowY - 70, '—', leftRateStyle).setOrigin(0.5);
+    // force card display size (keep ratio)
+    const CARD_W = 160, CARD_H = 240;
+    const tex = this.textures.get(cardKey);
+    const baseWidth = (tex && tex.source && tex.source[0]) ? tex.source[0].width : card.width || CARD_W;
+    const baseHeight = (tex && tex.source && tex.source[0]) ? tex.source[0].height : card.height || CARD_H;
+    card.setScale(CARD_W / baseWidth, CARD_H / baseHeight);
+
+    // Skip button
+    const skipY = centerY + 50;
+    const skipBtn = this.add.rectangle(centerX, skipY, 120, 44, 0x6666aa).setOrigin(0.5).setInteractive({ useHandCursor: true });
+    const skipText = this.add.text(centerX, skipY, "Skip", { font: "20px Brothers", color: "#ffffff" }).setOrigin(0.5);
+    this.addPressEffect(skipBtn, skipText);
+    this.hiloContainer.add([skipBtn, skipText]);
+
+    // arrows + rate texts
+    const arrowOffsetX = Math.min(220, contentW * 0.32);
+    const arrowY = centerY - 100;
+
+    const leftArrowImg = this.add.image(centerX - arrowOffsetX, arrowY, 'down_arrow').setDisplaySize(68, 48).setOrigin(0.5);
+    const leftRateText = this.add.text(centerX - arrowOffsetX, arrowY - 70, '—', { font: "bold 48px Brothers", color: "#ff4d4d", align: 'center' }).setOrigin(0.5);
     leftRateText.setStroke('#000000', 6);
     this.hiloContainer.add([leftArrowImg, leftRateText]);
 
-    const rightRateStyle = { font: "bold 72px Brothers", color: "#33cc33", align: 'center' };
-    const rightArrowImg = this.add.image(centerX + arrowOffsetX, arrowY, 'up_arrow')
-      .setDisplaySize(68, 48)
-      .setOrigin(0.5)
-    const rightRateText = this.add.text(centerX + arrowOffsetX, arrowY - 70, '—', rightRateStyle).setOrigin(0.5);
+    const rightArrowImg = this.add.image(centerX + arrowOffsetX, arrowY, 'up_arrow').setDisplaySize(68, 48).setOrigin(0.5);
+    const rightRateText = this.add.text(centerX + arrowOffsetX, arrowY - 70, '—', { font: "bold 48px Brothers", color: "#33cc33", align: 'center' }).setOrigin(0.5);
     rightRateText.setStroke('#000000', 6);
     this.hiloContainer.add([rightArrowImg, rightRateText]);
 
-    // === update rate text function ===
     const updateRates = (index) => {
       const rank = getRank(index);
       const ratio = cardRatios[rank];
-
       if (ratio.lower) {
-        leftRateText.setText(ratio.lower.toFixed(2) + "x");
-        leftRateText.setAlpha(1);
-      } else {
-        leftRateText.setText("—");
-        leftRateText.setAlpha(0.5);
-      }
-
+        leftRateText.setText(ratio.lower.toFixed(2) + "x"); leftRateText.setAlpha(1);
+      } else { leftRateText.setText("—"); leftRateText.setAlpha(0.5); }
       if (ratio.higher) {
-        rightRateText.setText(ratio.higher.toFixed(2) + "x");
-        rightRateText.setAlpha(1);
+        rightRateText.setText(ratio.higher.toFixed(2) + "x"); rightRateText.setAlpha(1);
+      } else { rightRateText.setText("—"); rightRateText.setAlpha(0.5); }
+    };
+    updateRates(currentIndex);
+
+    // === Bet panel ===
+    const betPanelHeight = 400;
+    const betPanelX = contentLeft + contentW / 2 - 10;
+    const betPanelY = contentTop + contentH - betPanelHeight / 2 + 10;
+
+    const betBg = this.add.rectangle(betPanelX, betPanelY, contentW, betPanelHeight, 0x222222, 0.95)
+      .setOrigin(0.5).setStrokeStyle(2, 0xffd700);
+    this.hiloContainer.add(betBg);
+
+    // balance text (local to hilo screen)
+    this.userBalance = (typeof this.balance === 'number') ? this.balance : (this.userBalance || 1000);
+    const balanceText = this.add.text(betPanelX - 100, betPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
+      font: "20px Brothers", color: '#ffffff', align: 'center'
+    }).setOrigin(0, 0.5);
+    this.hiloContainer.add(balanceText);
+
+    // bet input box (display only)
+    this.hiloBetAmount = 0.00;
+    const inputBg = this.add.rectangle(betPanelX + 5, betPanelY - 130, 280, 40, 0x000000).setOrigin(0.5).setStrokeStyle(2, 0xffffff);
+    this.hiloContainer.add(inputBg);
+
+    const betInput = this.add.text(betPanelX + 5, betPanelY - 130, currency.format(this.hiloBetAmount), {
+      font: "20px Brothers", color: '#fff'
+    }).setOrigin(0.5);
+    this.hiloContainer.add(betInput);
+
+    // toggle group (step values)
+    const betValues = [1, 5, 10, 50, 100];
+    this.selectedStep = 1;
+    const btnWidth = 70, btnHeight = 36, spacing = 15;
+    const totalWidth = betValues.length * btnWidth + (betValues.length - 1) * spacing;
+    const startBtnX = betPanelX - totalWidth / 2 + 40;
+    const btnY = betPanelY - 75;
+    this.hiloBetButtons = [];
+
+    betValues.forEach((val, idx) => {
+      const x = startBtnX + idx * (btnWidth + spacing);
+      const b = this.add.rectangle(x, btnY, btnWidth, btnHeight, 0x555555).setOrigin(0.5).setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true });
+      const label = this.add.text(x, btnY, val.toString(), { font: "18px Brothers", color: "#fff" }).setOrigin(0.5);
+
+      b.on("pointerdown", () => {
+        this.selectedStep = val;
+        this.hiloBetButtons.forEach(btn => btn.bg.setFillStyle(0x555555));
+        b.setFillStyle(0x008800);
+      });
+
+      this.addPressEffect(b, label);
+      this.hiloContainer.add([b, label]);
+      this.hiloBetButtons.push({ bg: b, label, val });
+    });
+    if (this.hiloBetButtons[0]) this.hiloBetButtons[0].bg.setFillStyle(0x008800);
+
+    // plus / minus logic (reserve funds immediately)
+    const minusBg = this.add.rectangle(betPanelX - 175, betPanelY - 130, 50, 40, 0x884444).setOrigin(0.5).setInteractive();
+    const minusText = this.add.text(minusBg.x, minusBg.y, "-", { font: "24px Brothers", color: "#fff" }).setOrigin(0.5);
+
+    minusBg.on("pointerdown", () => {
+      const step = this.selectedStep;
+      if (this.hiloBetAmount >= step) {
+        this.hiloBetAmount = parseFloat((this.hiloBetAmount - step).toFixed(2));
+        this.userBalance = parseFloat((this.userBalance + step).toFixed(2));
       } else {
-        rightRateText.setText("—");
-        rightRateText.setAlpha(0.5);
+        // return entire bet to balance
+        this.userBalance = parseFloat((this.userBalance + this.hiloBetAmount).toFixed(2));
+        this.hiloBetAmount = 0;
+      }
+      betInput.setText(currency.format(this.hiloBetAmount));
+      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+    });
+    this.addPressEffect(minusBg, minusText);
+
+    const plusBg = this.add.rectangle(betPanelX + 185, betPanelY - 130, 50, 40, 0x448844).setOrigin(0.5).setInteractive();
+    const plusText = this.add.text(plusBg.x, plusBg.y, "+", { font: "24px Brothers", color: "#fff" }).setOrigin(0.5);
+
+    plusBg.on("pointerdown", () => {
+      const step = this.selectedStep;
+      if (this.userBalance >= step) {
+        this.hiloBetAmount = parseFloat((this.hiloBetAmount + step).toFixed(2));
+        this.userBalance = parseFloat((this.userBalance - step).toFixed(2));
+      }
+      betInput.setText(currency.format(this.hiloBetAmount));
+      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+    });
+    this.addPressEffect(plusBg, plusText);
+
+    this.hiloContainer.add([minusBg, minusText, plusBg, plusText]);
+
+    // percent buttons (use availableBalance = userBalance + currentBet)
+    const percents = [0, 25, 50, 75, 100];
+    const quickStartX = betPanelX - totalWidth / 2 + 40;
+    const quickY = betPanelY - 30;
+    this.hiloPercentButtons = [];
+
+    percents.forEach((p, idx) => {
+      const px = quickStartX + idx * 85;
+      const pBg = this.add.rectangle(px, quickY, 70, 32, 0x444444).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      const pLabel = p === 0 ? "Clear" : `${p}%`;
+      const pText = this.add.text(px, quickY, pLabel, { font: "16px Brothers", color: "#fff" }).setOrigin(0.5);
+
+      pBg.on('pointerdown', () => {
+        const availableBalance = parseFloat((this.userBalance + this.hiloBetAmount).toFixed(2));
+        const newBet = p === 0 ? 0 : parseFloat((availableBalance * (p / 100)).toFixed(2));
+        this.hiloBetAmount = newBet;
+        this.userBalance = parseFloat((availableBalance - newBet).toFixed(2));
+        betInput.setText(currency.format(this.hiloBetAmount));
+        balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      });
+
+      this.addPressEffect(pBg, pText);
+      this.hiloContainer.add([pBg, pText]);
+      this.hiloPercentButtons.push(pBg);
+    });
+
+    // Higher / Lower buttons - create BEFORE revealCard (revealCard uses these refs)
+    const upBtnImg = this.add.image(betPanelX + contentW / 4 - 25, betPanelY + 50, 'bet_higher')
+      .setOrigin(0.5).setDisplaySize(158, 69).setInteractive({ useHandCursor: true });
+    this.addPressEffect(upBtnImg);
+
+    const downBtnImg = this.add.image(betPanelX + contentW / 4 - 225, betPanelY + 50, 'bet_lower')
+      .setOrigin(0.5).setDisplaySize(158, 69).setInteractive({ useHandCursor: true });
+    this.addPressEffect(downBtnImg);
+
+    // prize pool & cashout
+    this.prizePool = 0.00;
+    const cashoutBg = this.add.rectangle(betPanelX + contentW / 4 - 125, betPanelY + 125, 280, 40, 0x000000)
+      .setOrigin(0.5).setStrokeStyle(2, 0xffd700);
+    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "Cashout", { font: "20px Brothers", color: '#888888' }).setOrigin(0.5);
+    this.addPressEffect(cashoutBg, cashoutText);
+    this.cashoutEnabled = false;
+
+    this.updateCashoutButton = () => {
+      if (this.prizePool > 0) {
+        cashoutText.setText(`Cashout $${currency.format(this.prizePool)}`);
+        cashoutText.setColor('#FFD700');
+        this.cashoutEnabled = true;
+        cashoutBg.setInteractive({ useHandCursor: true });
+      } else {
+        cashoutText.setText("Cashout");
+        cashoutText.setColor('#888888');
+        this.cashoutEnabled = false;
+        cashoutBg.disableInteractive();
       }
     };
 
-    updateRates(currentIndex);
+    cashoutBg.on('pointerdown', () => {
+      if (!this.cashoutEnabled) return;
+      // add prizePool to balance
+      this.userBalance = parseFloat((this.userBalance + this.prizePool).toFixed(2));
+      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+
+      // play sound with unlocked fallback
+      if (!this.sound.locked) {
+        this.sound.play('ka-chingSound', { volume: 1 });
+      } else {
+        this.sound.once(Phaser.Sound.Events.UNLOCKED, () => {
+          this.sound.play('ka-chingSound', { volume: 1 });
+        });
+      }
+
+      this.prizePool = 0;
+      this.updateCashoutButton();
+
+      // reset game state: allow skip and unlock bet controls
+      this.hiloGameStarted = false;
+      skipBtn.setVisible(true);
+      skipText.setVisible(true);
+
+      this.hiloBetButtons.forEach(b => b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555));
+      plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
+      minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
+      this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
+      betInput.setColor('#ffffff');
+    });
+
+    this.updateCashoutButton();
+    this.hiloContainer.add([upBtnImg, downBtnImg, cashoutBg, cashoutText]);
+
+    // revealCard: uses up/down btn refs, disables them while flipping
+    this.isFlipping = false;
+    const getScalesForKey = (key) => {
+      const texK = this.textures.get(key);
+      let frameW = CARD_W, frameH = CARD_H;
+      if (texK && texK.source && texK.source[0]) {
+        frameW = texK.source[0].width; frameH = texK.source[0].height;
+      } else if (card.frame) {
+        frameW = card.frame.width; frameH = card.frame.height;
+      }
+      return { sx: CARD_W / frameW, sy: CARD_H / frameH };
+    };
 
     const revealCard = (newIndex, onComplete = null) => {
       if (this.isFlipping) return;
       this.isFlipping = true;
 
+      // disable H/L while flipping
       upBtnImg.disableInteractive().setAlpha(0.5);
       downBtnImg.disableInteractive().setAlpha(0.5);
 
-      const DESIRED_W = 160;
-      const DESIRED_H = 240;
-
       this.tweens.killTweensOf(card);
-
-      const getScalesForKey = (key) => {
-        const tex = this.textures.get(key);
-        let frameW = 1, frameH = 1;
-        if (tex && tex.source && tex.source[0]) {
-          frameW = tex.source[0].width;
-          frameH = tex.source[0].height;
-        } else if (card.frame) {
-          frameW = card.frame.width;
-          frameH = card.frame.height;
-        }
-        return { sx: DESIRED_W / frameW, sy: DESIRED_H / frameH };
-      };
-
+      // shrink horizontally to 0
       this.tweens.add({
         targets: card,
         scaleX: 0,
         duration: 160,
         ease: 'Cubic.easeIn',
         onComplete: () => {
+          // show card back first (scale Y preserved)
           const backKey = 'card_back';
           const backScales = getScalesForKey(backKey);
-
           card.setTexture(backKey);
           card.setScale(0, backScales.sy);
 
+          // expand to show back
           this.tweens.add({
             targets: card,
             scaleX: backScales.sx,
             duration: 160,
             ease: 'Cubic.easeOut',
             onComplete: () => {
-              this.time.delayedCall(180, () => {
+              // small delay to show back
+              this.time.delayedCall(160, () => {
+                // flip to front
                 this.tweens.add({
                   targets: card,
                   scaleX: 0,
@@ -397,7 +570,6 @@ export default class GameScene extends Phaser.Scene {
                   onComplete: () => {
                     const finalKey = indexToKey(newIndex);
                     const finalScales = getScalesForKey(finalKey);
-
                     card.setTexture(finalKey);
                     card.setScale(0, finalScales.sy);
 
@@ -423,306 +595,103 @@ export default class GameScene extends Phaser.Scene {
       });
     };
 
-    // skip button logic
+    // skip logic (flip to random new card)
     skipBtn.on('pointerdown', () => {
       let nextIndex = getRandomIndex();
       if (nextIndex === currentIndex && 52 > 1) {
-        for (let i = 0; i < 6 && nextIndex === currentIndex; i++) {
-          nextIndex = getRandomIndex();
-        }
+        for (let i = 0; i < 6 && nextIndex === currentIndex; i++) nextIndex = getRandomIndex();
       }
-      revealCard(nextIndex, () => {
-        updateRates(currentIndex);
-      });
+      revealCard(nextIndex, () => updateRates(currentIndex));
     });
 
-    // === Bet panel ===
-    const betPanelHeight = 200;
-    const betPanelX = contentLeft + contentW / 2 - 10;
-    const betPanelY = contentTop + contentH - betPanelHeight / 2 + 10;
-
-    const betBg = this.add.rectangle(betPanelX, betPanelY, contentW, betPanelHeight, 0x222222, 0.9)
-      .setOrigin(0.5)
-      .setStrokeStyle(2, 0xffd700);
-    this.hiloContainer.add(betBg);
-
-    this.userBalance = (typeof this.balance === 'number') ? this.balance : (this.userBalance || 1000);
-    const balanceText = this.add.text(betPanelX - 35, betPanelY - 70, `Balance: ${this.userBalance}`, {
-      font: "20px Brothers",
-      color: '#ffffff'
-    }).setOrigin(0.5);
-    this.hiloContainer.add(balanceText);
-
-    this.hiloBetAmount = 0;
-    const inputBg = this.add.rectangle(betPanelX - 35, betPanelY - 30, 280, 40, 0x000000)
-      .setOrigin(0.5)
-      .setStrokeStyle(2, 0xffffff);
-    this.hiloContainer.add(inputBg);
-
-    const betInput = this.add.text(betPanelX - 35, betPanelY - 30, this.hiloBetAmount.toString(), {
-      font: "20px Brothers",
-      color: '#fff'
-    }).setOrigin(0.5);
-    this.hiloContainer.add(betInput);
-
-    // toggle group
-    const betValues = [1, 5, 10, 50, 100];
-    this.selectedStep = 1;
-    const btnWidth = 70;
-    const btnHeight = 36;
-    const spacing = 15;
-    const totalWidth = betValues.length * btnWidth + (betValues.length - 1) * spacing;
-    const startBtnX = betPanelX - totalWidth / 2;
-    const btnY = betPanelY + 25;
-    this.hiloBetButtons = [];
-
-    betValues.forEach((val, idx) => {
-      const x = startBtnX + idx * (btnWidth + spacing);
-      const b = this.add.rectangle(x, btnY, btnWidth, btnHeight, 0x555555)
-        .setOrigin(0.5)
-        .setStrokeStyle(2, 0xffffff)
-        .setInteractive({ useHandCursor: true });
-      const label = this.add.text(x, btnY, val.toString(), { font: "18px Brothers", color: "#fff" }).setOrigin(0.5);
-
-      b.on("pointerdown", () => {
-        this.selectedStep = val;
-        this.hiloBetButtons.forEach(btn => btn.bg.setFillStyle(0x555555));
-        b.setFillStyle(0x008800);
-      });
-
-      this.addPressEffect(b, label);
-      this.hiloContainer.add([b, label]);
-      this.hiloBetButtons.push({ bg: b, label, val });
-    });
-    
-    if (this.hiloBetButtons[0]) this.hiloBetButtons[0].bg.setFillStyle(0x008800);
-
-    // plus / minus
-    const minusBg = this.add.rectangle(betPanelX - 215, betPanelY - 30, 50, 40, 0x884444)
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    const minusText = this.add.text(betPanelX - 215, betPanelY - 30, "-", { font: "24px Brothers", color: "#fff" }).setOrigin(0.5);
-    minusBg.on("pointerdown", () => {
-      this.hiloBetAmount = Math.max(0, this.hiloBetAmount - this.selectedStep);
-      betInput.setText(this.hiloBetAmount.toString());
-      this.userBalance = Math.max(0, this.userBalance - this.selectedStep);
-      balanceText.setText(`Balance: ${this.userBalance}`);
-    });
-    this.addPressEffect(minusBg, minusText);
-    
-    const plusBg = this.add.rectangle(betPanelX + 145, betPanelY - 30, 50, 40, 0x448844)
-      .setOrigin(0.5)
-      .setInteractive({ useHandCursor: true });
-    const plusText = this.add.text(betPanelX + 145, betPanelY - 30, "+", { font: "24px Brothers", color: "#fff" }).setOrigin(0.5);
-    plusBg.on("pointerdown", () => {
-      this.hiloBetAmount = Math.min(this.userBalance, this.hiloBetAmount + this.selectedStep);
-      betInput.setText(this.hiloBetAmount.toString());
-      this.userBalance = Math.max(0, this.userBalance - this.selectedStep);
-      balanceText.setText(`Balance: ${this.userBalance}`);
-    });
-    this.addPressEffect(plusBg, plusText);
-
-    this.hiloContainer.add([minusBg, minusText, plusBg, plusText]);
-
-    // percent buttons
-    const percents = [0, 25, 50, 75, 100];
-    const quickStartX = betPanelX - totalWidth / 2;
-    const quickY = betPanelY + 70;
-
-    this.hiloPercentButtons = [];
-    percents.forEach((p, idx) => {
-      const px = quickStartX + idx * 85;
-      const pBg = this.add.rectangle(px, quickY, 70, 32, 0x444444)
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
-      const label = p === 0 ? "Clear" : `${p}%`;
-      const pText = this.add.text(px, quickY, label, { font: "16px Brothers", color: '#fff' }).setOrigin(0.5);
-      pBg.on('pointerdown', () => {
-        const availableBalance = this.userBalance + this.hiloBetAmount;
-        this.hiloBetAmount = p === 0 ? 0 : availableBalance * (p / 100);
-        betInput.setText(currency.format(this.hiloBetAmount));
-        this.userBalance = availableBalance - this.hiloBetAmount;
-        balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-      });
-
-      this.addPressEffect(pBg, pText);
-      this.hiloContainer.add([pBg, pText]);
-
-      this.hiloPercentButtons.push(pBg);
-    });
-
-    // === Higher / Lower buttons ===
-    const upBtnImg = this.add.image(betPanelX + contentW / 4 + 200, betPanelY - 50, 'bet_higher')
-      .setOrigin(0.5)
-      .setDisplaySize(158, 69)
-      .setInteractive({ useHandCursor: true });
-    this.addPressEffect(upBtnImg);
-    upBtnImg.on('pointerdown', () => startRound(true));
-
-    const downBtnImg = this.add.image(betPanelX + contentW / 4, betPanelY - 50, 'bet_lower')
-      .setOrigin(0.5)
-      .setDisplaySize(158, 69)
-      .setInteractive({ useHandCursor: true });
-    this.addPressEffect(downBtnImg);
-    downBtnImg.on('pointerdown', () => startRound(false));
-
-    // === Cashout button ===
-    this.prizePool = 0;
-
-    const cashoutBg = this.add.rectangle(
-      betPanelX + contentW / 4 + 100, // center under the 2 buttons
-      betPanelY + 60,
-      280,
-      40,
-      0x000000
-    ).setOrigin(0.5).setStrokeStyle(2, 0xffffff);
-
-    this.cashoutText = this.add.text(
-      cashoutBg.x,
-      cashoutBg.y,
-      "Cashout",
-      {
-        font: "20px Brothers",
-        color: '#888888' // disabled by default
-      }
-    ).setOrigin(0.5);
-
-    this.addPressEffect(cashoutBg, this.cashoutText);
-    this.cashoutEnabled = false;
-
-    // helper to update state
-    this.updateCashoutButton = () => {
-      if (this.prizePool > 0) {
-        this.cashoutText.setText(`Cashout $${this.prizePool}`);
-        this.cashoutText.setColor('#FFD700');
-        this.cashoutEnabled = true;
-
-        cashoutBg.setInteractive({ useHandCursor: true });
-      } else {
-        this.cashoutText.setText("Cashout");
-        this.cashoutText.setColor('#888888');
-        this.cashoutEnabled = false;
-
-        cashoutBg.disableInteractive();
-      }
-    };
-
-    // click handler
-    cashoutBg.on('pointerdown', () => {
-      if (!this.cashoutEnabled) return;
-
-      this.userBalance += this.prizePool;
-      balanceText.setText(`Balance: ${this.userBalance}`);
-      if (typeof balanceText !== 'undefined') {
-        balanceText.setText(`Balance: ${this.userBalance}`);
-      }
-
-      if (!this.sound.locked) {
-        this.sound.play('ka-chingSound', { volume: 1 });
-      } else {
-        this.sound.once('unlocked', () => {
-          this.sound.play('ka-chingSound', { volume: 1 });
-        });
-      }
-
-      this.prizePool = 0;
-      this.updateCashoutButton();
-
-      this.hiloGameStarted = false;
-
-      skipBtn.setVisible(true);
-      skipText.setVisible(true);
-
-      this.hiloBetButtons.forEach(b => b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555));
-      plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
-      minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
-      this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
-      betInput.setColor('#ffffff');
-    });
-
-    // init state
-    this.updateCashoutButton();
-
-    this.hiloContainer.add([upBtnImg, downBtnImg, cashoutBg, this.cashoutText]);
-
-    // Start Round
+    // Start Round logic
+    this.hiloGameStarted = false;
     const startRound = (isHigher) => {
-      if(this.hiloBetAmount == 0) return;
+      // cannot start with 0 bet
+      if (this.hiloBetAmount <= 0) return;
 
+      // if not started, lock bet panel & hide skip
       if (!this.hiloGameStarted) {
-        skipBtn.setVisible(false);
-        skipText.setVisible(false);
+        skipBtn.setVisible(false); skipText.setVisible(false);
 
-        this.hiloBetButtons.forEach(b => {
-          b.bg.disableInteractive().setFillStyle(0x333333);
-          b.label.setColor('#888888');
-        });
+        // visually lock bet controls
+        this.hiloBetButtons.forEach(b => { b.bg.disableInteractive().setFillStyle(0x333333); b.label.setColor('#888888'); });
         plusBg.disableInteractive().setFillStyle(0x333333);
         minusBg.disableInteractive().setFillStyle(0x333333);
         this.hiloPercentButtons.forEach(pBg => pBg.disableInteractive().setFillStyle(0x333333));
-
         betInput.setColor('#888888');
 
         this.hiloGameStarted = true;
       }
 
-      const currentRank = currentIndex % 13;
+      const currentRank = getRank(currentIndex);
       let nextIndex = getRandomIndex();
       while (nextIndex === currentIndex && 52 > 1) nextIndex = getRandomIndex();
-      const nextRank = nextIndex % 13;
+      const nextRank = getRank(nextIndex);
 
+      // determine win BEFORE reveal so we know which ratio to use
       const userWin = (isHigher && nextRank > currentRank) || (!isHigher && nextRank < currentRank);
+      const chosenRatio = isHigher ? cardRatios[currentRank].higher : cardRatios[currentRank].lower;
 
+      // flip to next card, then resolve
       revealCard(nextIndex, () => {
         updateRates(currentIndex);
-      });
-      card.setTexture(indexToKey(currentIndex));
 
-        if (userWin) {
-          if (!this.sound.locked) {
-            this.sound.play('winSound', { volume: 1 });
-          } else {
-            this.sound.once('unlocked', () => {
-              this.sound.play('winSound', { volume: 1 });
-            });
-          }
-          const ratio = isHigher ? cardRatios[currentRank].higher : cardRatios[currentRank].lower;
+        if (userWin && chosenRatio) {
+          // play win sound
+          if (!this.sound.locked) this.sound.play('winSound', { volume: 1 });
+          else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('winSound', { volume: 1 }));
           
-          if (!ratio) {
-            this.prizePool = 0;
-            this.updateCashoutButton();
-          } else {
-            const winAmount = parseFloat((this.hiloBetAmount * ratio).toFixed(2));
-            this.prizePool = parseFloat((this.prizePool + winAmount).toFixed(2));
-
-            this.updateCashoutButton();
-          }
-        } else {
-          if (!this.sound.locked) {
-            this.sound.play('loseSound', { volume: 1 });
-          } else {
-            this.sound.once('unlocked', () => {
-              this.sound.play('loseSound', { volume: 1 });
+          if (this.myConfetti) {
+            this.myConfetti({
+              particleCount: 120,
+              spread: 80,
+              origin: { y: 0.35 }
             });
           }
+
+          // win amount = bet * ratio (per round) — accumulate
+          const winAmount = parseFloat((this.hiloBetAmount * chosenRatio).toFixed(2));
+          this.prizePool = parseFloat((this.prizePool + winAmount).toFixed(2));
+
+          // update cashout button
+          this.updateCashoutButton();
+        } else if (userWin && !chosenRatio) {
+          // no ratio -> treat as no win
+          this.prizePool = 0;
+          this.updateCashoutButton();
+        } else {
+          // LOSS
+          if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
+          else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
+
           this.prizePool = 0;
           this.updateCashoutButton();
           this.hiloGameStarted = false;
 
-          skipBtn.setVisible(true);
-          skipText.setVisible(true);
+          // reveal done, show skip and unlock panel
+          skipBtn.setVisible(true); skipText.setVisible(true);
 
-          this.hiloBetButtons.forEach(b => {
-            b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555);
-            b.label.setColor('#ffffff');
-          });
+          this.hiloBetButtons.forEach(b => { b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555); b.label.setColor('#ffffff'); });
           plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
           minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
           this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
 
           betInput.setColor('#ffffff');
+          // After loss, the bet has been consumed (we reserved funds when increasing the bet)
         }
+
+        // keep balance text in sync (balance is updated when placing/removing bet and when cashing out)
+        balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      });
+
+      // Immediately after initiating round we DO NOT modify userBalance here.
+      // userBalance was already reserved when player adjusted the bet.
     };
+
+    // wire higher/lower buttons to startRound
+    upBtnImg.on('pointerdown', () => startRound(true));
+    downBtnImg.on('pointerdown', () => startRound(false));
 
     // store refs
     this.hilo = {
