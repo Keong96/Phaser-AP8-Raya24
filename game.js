@@ -39,6 +39,8 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('coin_head', 'images/coin_head.png');
     this.load.image('coin_tail', 'images/coin_tail.png');
     
+    this.load.image('history_slot', 'images/history_slot.png');
+
     this.load.audio('bgm', 'sounds/background_music.mp3');
     this.load.audio('click', 'sounds/click.mp3');
     this.load.audio('winSound', 'sounds/win.mp3');
@@ -354,6 +356,16 @@ export default class GameScene extends Phaser.Scene {
     const betPanelX = contentLeft + contentW / 2 - 10;
     const betPanelY = contentTop + contentH - betPanelHeight / 2 + 10;
 
+    const slotSpacing = 100;
+    this.hiloHistorySlot = [];
+
+    for (let i = 0; i < 5; i++) {
+      let slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 265,'history_slot').setDisplaySize(100, 100).setOrigin(0.5);
+      this.hiloHistorySlot.push(slot);
+    }
+
+    this.hiloContainer.add(this.hiloHistorySlot);
+
     const betBg = this.add.rectangle(betPanelX, betPanelY, contentW, betPanelHeight, 0x222222, 0.95)
       .setOrigin(0.5).setStrokeStyle(2, 0xffd700);
     this.hiloContainer.add(betBg);
@@ -499,11 +511,12 @@ export default class GameScene extends Phaser.Scene {
 
     cashoutBg.on('pointerdown', () => {
       if (!this.cashoutEnabled) return;
+
       // add prizePool to balance
       this.setUserBalance(this.userBalance + this.prizePool);
       balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
 
-      // play sound with unlocked fallback
+      // play sound
       if (!this.sound.locked) {
         this.sound.play('ka-chingSound', { volume: 1 });
       } else {
@@ -515,7 +528,15 @@ export default class GameScene extends Phaser.Scene {
       this.prizePool = 0;
       this.updateCashoutButton();
 
-      // reset game state: allow skip and unlock bet controls
+      // clear all history slots
+      this.hiloHistorySlot.forEach(slot => {
+        if (slot.cardImage) {
+          slot.cardImage.destroy();
+          slot.cardImage = null;
+        }
+      });
+
+      // reset game state
       this.hiloGameStarted = false;
       skipBtn.setVisible(true);
       skipText.setVisible(true);
@@ -620,17 +641,13 @@ export default class GameScene extends Phaser.Scene {
       revealCard(nextIndex, () => updateRates(currentIndex));
     });
 
-    // Start Round logic
     this.hiloGameStarted = false;
     const startRound = (isHigher) => {
-      // cannot start with 0 bet
       if (this.hiloBetAmount <= 0) return;
 
-      // if not started, lock bet panel & hide skip
       if (!this.hiloGameStarted) {
         skipBtn.setVisible(false); skipText.setVisible(false);
 
-        // visually lock bet controls
         this.hiloBetButtons.forEach(b => { b.bg.disableInteractive().setFillStyle(0x333333); b.label.setColor('#888888'); });
         plusBg.disableInteractive().setFillStyle(0x333333);
         minusBg.disableInteractive().setFillStyle(0x333333);
@@ -645,11 +662,9 @@ export default class GameScene extends Phaser.Scene {
       while (nextIndex === currentIndex && 52 > 1) nextIndex = getRandomIndex();
       const nextRank = getRank(nextIndex);
 
-      // determine win BEFORE reveal so we know which ratio to use
       const userWin = (isHigher && nextRank > currentRank) || (!isHigher && nextRank < currentRank);
       const chosenRatio = isHigher ? cardRatios[currentRank].higher : cardRatios[currentRank].lower;
 
-      // flip to next card, then resolve
       revealCard(nextIndex, () => {
         updateRates(currentIndex);
 
@@ -657,7 +672,7 @@ export default class GameScene extends Phaser.Scene {
           // play win sound
           if (!this.sound.locked) this.sound.play('winSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('winSound', { volume: 1 }));
-          
+
           if (this.myConfetti) {
             this.time.delayedCall(0, () => {
               this.myConfetti({ particleCount: 100, spread: 60, origin: { y: 0.35 } });
@@ -670,14 +685,43 @@ export default class GameScene extends Phaser.Scene {
 
           // update cashout button
           this.updateCashoutButton();
-        } else if (userWin && !chosenRatio) {
-          // no ratio -> treat as no win
-          this.prizePool = 0;
-          this.updateCashoutButton();
+
+          // add card image on first empty slot
+          const emptySlot = this.hiloHistorySlot.find(s => !s.cardImage);
+          if (emptySlot) {
+            const cardOnSlot = this.add.image(emptySlot.x - 3, emptySlot.y - 3, indexToKey(currentIndex))
+              .setDisplaySize(60, 75)
+              .setOrigin(0.5);
+            emptySlot.cardImage = cardOnSlot;
+            this.hiloContainer.add(cardOnSlot);
+          }
+
+          // check if all 5 slots filled
+          const filledSlots = this.hiloHistorySlot.filter(s => s.cardImage).length;
+          if (filledSlots >= 5) {
+            // reset everything
+            this.hiloHistorySlot.forEach(slot => {
+              if (slot.cardImage) {
+                slot.cardImage.destroy();
+                slot.cardImage = null;
+              }
+            });
+            this.prizePool = 0;
+            this.updateCashoutButton();
+            this.hiloGameStarted = false;
+          }
         } else {
           // LOSS
           if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
+
+          // clear all slots
+          this.hiloHistorySlot.forEach(slot => {
+            if (slot.cardImage) {
+              slot.cardImage.destroy();
+              slot.cardImage = null;
+            }
+          });
 
           this.prizePool = 0;
           this.updateCashoutButton();
@@ -693,17 +737,11 @@ export default class GameScene extends Phaser.Scene {
           plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
           minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
           this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
-
           betInput.setColor('#ffffff');
-          // After loss, the bet has been consumed (we reserved funds when increasing the bet)
         }
 
-        // keep balance text in sync (balance is updated when placing/removing bet and when cashing out)
         balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
       });
-
-      // Immediately after initiating round we DO NOT modify userBalance here.
-      // userBalance was already reserved when player adjusted the bet.
     };
 
     // wire higher/lower buttons to startRound
@@ -987,6 +1025,7 @@ export default class GameScene extends Phaser.Scene {
 
     coinCashoutBg.on('pointerdown', () => {
       if (!this.coinCashoutEnabled) return;
+
       this.userBalance = parseFloat((this.userBalance + this.coinPrizePool).toFixed(2));
       coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
 
@@ -996,13 +1035,21 @@ export default class GameScene extends Phaser.Scene {
       this.coinPrizePool = 0;
       updateCoinCashout();
 
-      // reset controls
+      // reset game state
       this.coinGameStarted = false;
       this.coinBetButtons.forEach(b => b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555));
       coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
       coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
       this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
       coinBetInput.setColor('#ffffff');
+
+      // clear coin history
+      this.coinFlipHistorySlot.forEach(slot => {
+        if (slot.coinImage) {
+          slot.coinImage.destroy();
+          slot.coinImage = null;
+        }
+      });
     });
 
     updateCoinCashout();
@@ -1027,11 +1074,9 @@ export default class GameScene extends Phaser.Scene {
         coinBetInput.setColor('#888888');
       }
 
-      // determine result
       const result = Math.random() < 0.5 ? 0 : 1; // 0 heads, 1 tails
       const userWin = (choiceIsHeads && result === 0) || (!choiceIsHeads && result === 1);
 
-      // reveal animation then resolve
       revealCoin(result, () => {
         if (userWin) {
           if (!this.sound.locked) this.sound.play('winSound', { volume: 1 });
@@ -1046,8 +1091,32 @@ export default class GameScene extends Phaser.Scene {
           const winAmount = parseFloat((this.coinBetAmount * COIN_MULTIPLIER).toFixed(2));
           this.coinPrizePool = parseFloat((this.coinPrizePool + winAmount).toFixed(2));
           updateCoinCashout();
+
+          // add coin result into next available slot
+          const nextSlot = this.coinFlipHistorySlot.find(slot => !slot.coinImage);
+          if (nextSlot) {
+            const iconKey = result === 0 ? 'coin_heads' : 'coin_tails';
+            const icon = this.add.image(nextSlot.x, nextSlot.y, iconKey)
+              .setDisplaySize(80, 80)
+              .setDepth(nextSlot.depth + 1)
+              .setOrigin(0.5);
+            nextSlot.coinImage = icon;
+          }
+
+          // check if all 5 slots filled, then reset
+          if (this.coinFlipHistorySlot.every(slot => slot.coinImage)) {
+            this.time.delayedCall(1000, () => {
+              this.coinFlipHistorySlot.forEach(slot => {
+                if (slot.coinImage) {
+                  slot.coinImage.destroy();
+                  slot.coinImage = null;
+                }
+              });
+            });
+          }
+
         } else {
-          // loss: bet is consumed (already reserved when placing bet)
+          // LOSS
           if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
 
@@ -1055,7 +1124,15 @@ export default class GameScene extends Phaser.Scene {
           updateCoinCashout();
           this.coinGameStarted = false;
 
-          // show controls again
+          // clear history on loss
+          this.coinFlipHistorySlot.forEach(slot => {
+            if (slot.coinImage) {
+              slot.coinImage.destroy();
+              slot.coinImage = null;
+            }
+          });
+
+          // unlock controls
           this.coinBetButtons.forEach(b => { b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555); b.label.setColor('#ffffff'); });
           coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
           coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
@@ -1063,7 +1140,6 @@ export default class GameScene extends Phaser.Scene {
           coinBetInput.setColor('#ffffff');
         }
 
-        // keep balance text in sync (balance updated on bet change and on cashout)
         coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
       });
     };
