@@ -24,6 +24,10 @@ export default class GameScene extends Phaser.Scene {
       this.load.image(`${rank}_of_${suit}`, `images/cards/${rank}_of_${suit}.png`);
     }));
 
+    this.load.image('lucky_shop', 'images/lucky_shop.png');
+    this.load.image('hilo_game', 'images/hilo_game.png');
+    this.load.image('coinflip_game', 'images/coinflip_game.png');
+
     this.load.image('card_back', 'images/card_back.png');
     this.load.image('up_arrow', 'images/up_arrow.png');
     this.load.image('down_arrow', 'images/down_arrow.png');
@@ -40,6 +44,7 @@ export default class GameScene extends Phaser.Scene {
     this.load.audio('winSound', 'sounds/win.mp3');
     this.load.audio('loseSound', 'sounds/lose.mp3');
     this.load.audio('ka-chingSound', 'sounds/ka-ching.mp3');
+    this.load.image('cashout_button', 'images/cashout_button.png');
   }
 
   create() {
@@ -114,36 +119,25 @@ export default class GameScene extends Phaser.Scene {
   createRightNav(navX) {
     this.navContainer = this.add.container(navX, 0);
 
-    const tabNames = ["Shop", "Hilo", "Coin Flip"];
+    const buttons = ['lucky_shop', 'hilo_game', 'coinflip_game'];
     const containers = [this.shopContainer, this.hiloContainer, this.coinFlipContainer];
 
-    const circleRadius = 35;
     const spacingY = 85;
     const startY = 80;
 
-    tabNames.forEach((name, i) => {
+    buttons.forEach((key, i) => {
       const cx = Math.round(this.navWidth / 2);
       const cy = startY + i * spacingY;
 
-      const circle = this.add.circle(cx, cy, circleRadius, 0x333333)
-        .setStrokeStyle(4, 0xffffff)
+      const btn = this.add.image(cx, cy, key)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
           containers.forEach((c, idx) => c.setVisible(idx === i));
           if (typeof this.setUserBalance === 'function') this.setUserBalance(this.userBalance);
         });
 
-      const label = this.add.text(cx, cy, name, {
-        font: "12px Brothers",
-        color: "#ffffff",
-        align: "center",
-        wordWrap: { width: circleRadius * 1.8 }
-      }).setOrigin(0.5);
-
-      this.addPressEffect(circle, label, 4);
-
-      this.navContainer.add(circle);
-      this.navContainer.add(label);
+      this.addPressEffect(btn, null, 4);
+      this.navContainer.add(btn);
     });
   }
 
@@ -754,40 +748,58 @@ export default class GameScene extends Phaser.Scene {
     const coinCenterX = coinContentLeft + coinContentW / 2;
     const coinCenterY = coinContentTop + coinContentH / 2 - 40;
 
-    // --- Coin visual (placeholder uses 'item' image) ---
+
     const COIN_SIZE = 160;
-    const coinImage = this.add.image(coinCenterX, coinCenterY - 40, 'coin_head').setOrigin(0.5).setDisplaySize(COIN_SIZE, COIN_SIZE);
+    let coinCurrentSide = Math.random() < 0.5 ? 0 : 1;
+    const coinKey = coinCurrentSide === 0 ? 'coin_head' : 'coin_tail';
+
+    const coinImage = this.add.image(coinCenterX, coinCenterY - 200, coinKey)
+      .setOrigin(0.5)
+      .setDisplaySize(COIN_SIZE, COIN_SIZE);
     this.coinFlipContainer.add(coinImage);
 
-    // coin side label
-    const coinSideLabel = this.add.text(coinCenterX, coinCenterY - 40, '—', { font: "28px Brothers", color: "#ffffff" }).setOrigin(0.5);
+    const coinSideLabel = this.add.text(
+      coinCenterX,
+      coinCenterY - 350,
+      coinCurrentSide === 0 ? 'HEADS' : 'TAILS',
+      { font: "28px Brothers", color: "#ffffff" }
+    ).setOrigin(0.5);
     coinSideLabel.setStroke('#000000', 6);
     this.coinFlipContainer.add(coinSideLabel);
 
-    // random starting side (0 = heads, 1 = tails)
-    let coinCurrentSide = Math.random() < 0.5 ? 0 : 1;
-    coinSideLabel.setText(coinCurrentSide === 0 ? 'HEADS' : 'TAILS');
-
-    // helper to spin / reveal coin (simple rotation + label)
     let coinIsSpinning = false;
     const revealCoin = (finalSide, onComplete = null) => {
       if (coinIsSpinning) return;
       coinIsSpinning = true;
 
+      const flipDuration = 800;
+      const flipInterval = 80;
+      let elapsed = 0;
+      let currentFlip = 0;
+
+      const flipTimer = this.time.addEvent({
+        delay: flipInterval,
+        callback: () => {
+          currentFlip++;
+          coinImage.setTexture(currentFlip % 2 === 0 ? 'coin_head' : 'coin_tail');
+          elapsed += flipInterval;
+          if (elapsed >= flipDuration) {
+            flipTimer.remove();
+            coinImage.setTexture(finalSide === 0 ? 'coin_head' : 'coin_tail');
+            coinSideLabel.setText(finalSide === 0 ? 'HEADS' : 'TAILS');
+            coinIsSpinning = false;
+            if (typeof onComplete === 'function') onComplete();
+          }
+        },
+        loop: true
+      });
+
       this.tweens.add({
         targets: coinImage,
         angle: 720,
-        scale: { from: 1.0, to: 1.05 },
-        duration: 600,
+        scale: { from: 1.0, to: 1.1 },
+        duration: flipDuration,
         ease: 'Cubic.easeOut',
-        onComplete: () => {
-          coinImage.setAngle(0);
-          coinImage.setScale(1);
-          coinCurrentSide = finalSide;
-          coinSideLabel.setText(finalSide === 0 ? 'HEADS' : 'TAILS');
-          coinIsSpinning = false;
-          if (typeof onComplete === 'function') onComplete();
-        }
       });
     };
 
