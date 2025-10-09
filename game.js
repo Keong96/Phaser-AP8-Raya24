@@ -49,7 +49,10 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     const confettiCanvas = document.getElementById('confetti');
-    this.myConfetti = confetti.create(confettiCanvas, { resize: true, useWorker: true });
+    this.myConfetti = confetti.create(confettiCanvas, {
+      resize: true,
+      useWorker: true
+    });
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -91,7 +94,6 @@ export default class GameScene extends Phaser.Scene {
     this.createRightNav(navX);
   }
 
-  // press / click effect: move down while pressed and play click sound
   addPressEffect(obj, pairedText = null, offset = 5) {
     obj.originalY = obj.y;
     if (pairedText && pairedText.originalY === undefined) pairedText.originalY = pairedText.y;
@@ -241,9 +243,6 @@ export default class GameScene extends Phaser.Scene {
 
       content.add(itemContainer);
     }
-
-    // quick debug: how many children were added to content?
-    console.log('shop content children count:', content.list.length);
 
     // Scroll with mouse wheel (only when shopContainer visible)
     this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
@@ -660,10 +659,8 @@ export default class GameScene extends Phaser.Scene {
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('winSound', { volume: 1 }));
           
           if (this.myConfetti) {
-            this.myConfetti({
-              particleCount: 120,
-              spread: 80,
-              origin: { y: 0.35 }
+            this.time.delayedCall(0, () => {
+              this.myConfetti({ particleCount: 100, spread: 60, origin: { y: 0.35 } });
             });
           }
 
@@ -748,7 +745,6 @@ export default class GameScene extends Phaser.Scene {
     const coinCenterX = coinContentLeft + coinContentW / 2;
     const coinCenterY = coinContentTop + coinContentH / 2 - 40;
 
-
     const COIN_SIZE = 160;
     let coinCurrentSide = Math.random() < 0.5 ? 0 : 1;
     const coinKey = coinCurrentSide === 0 ? 'coin_head' : 'coin_tail';
@@ -767,40 +763,83 @@ export default class GameScene extends Phaser.Scene {
     coinSideLabel.setStroke('#000000', 6);
     this.coinFlipContainer.add(coinSideLabel);
 
-    let coinIsSpinning = false;
+    let coinIsFlipping = false;
     const revealCoin = (finalSide, onComplete = null) => {
-      if (coinIsSpinning) return;
-      coinIsSpinning = true;
+      if (coinIsFlipping) return;
+      coinIsFlipping = true;
 
-      const flipDuration = 800;
-      const flipInterval = 80;
-      let elapsed = 0;
+      // source frame sizes (texture pixels)
+      const srcW = (coinImage.frame && coinImage.frame.width) ? coinImage.frame.width : COIN_SIZE;
+      const srcH = (coinImage.frame && coinImage.frame.height) ? coinImage.frame.height : COIN_SIZE;
+
+      const flipCount = 32;
+      const flipDuration = 20; // ms per half flip
+      const minCropW = Math.max(4, Math.round(srcW * 0.04)); // small safe minimum
       let currentFlip = 0;
 
-      const flipTimer = this.time.addEvent({
-        delay: flipInterval,
-        callback: () => {
-          currentFlip++;
-          coinImage.setTexture(currentFlip % 2 === 0 ? 'coin_head' : 'coin_tail');
-          elapsed += flipInterval;
-          if (elapsed >= flipDuration) {
-            flipTimer.remove();
-            coinImage.setTexture(finalSide === 0 ? 'coin_head' : 'coin_tail');
-            coinSideLabel.setText(finalSide === 0 ? 'HEADS' : 'TAILS');
-            coinIsSpinning = false;
-            if (typeof onComplete === 'function') onComplete();
-          }
-        },
-        loop: true
-      });
+      const applyCenteredCrop = (img, cropW) => {
+        const left = Math.floor((srcW - cropW) / 2);
+        img.setCrop(left, 0, cropW, srcH);
+      };
 
-      this.tweens.add({
-        targets: coinImage,
-        angle: 720,
-        scale: { from: 1.0, to: 1.1 },
-        duration: flipDuration,
-        ease: 'Cubic.easeOut',
-      });
+      // ensure display size locked
+      coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+
+      const expandHalf = () => {
+        const state = { w: minCropW };
+        this.tweens.add({
+          targets: state,
+          w: srcW,
+          duration: flipDuration,
+          ease: 'Linear',
+          onUpdate: () => {
+            const w = Math.round(state.w);
+            applyCenteredCrop(coinImage, w);
+          },
+          onComplete: () => {
+            currentFlip++;
+            if (currentFlip < flipCount) {
+              shrinkHalf();
+            } else {
+              // finalize: show final side, clear crop by setting full crop
+              coinImage.setTexture(finalSide === 0 ? 'coin_head' : 'coin_tail');
+              coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+              // replace clearCrop() with full setCrop
+              coinImage.setCrop(0, 0, srcW, srcH);
+              coinSideLabel.setText(finalSide === 0 ? 'HEADS' : 'TAILS');
+              coinIsFlipping = false;
+              if (typeof onComplete === 'function') onComplete();
+            }
+          }
+        });
+      };
+
+      const shrinkHalf = () => {
+        const state = { w: srcW };
+        this.tweens.add({
+          targets: state,
+          w: minCropW,
+          duration: flipDuration,
+          ease: 'Linear',
+          onUpdate: () => {
+            const w = Math.max(minCropW, Math.round(state.w));
+            applyCenteredCrop(coinImage, w);
+          },
+          onComplete: () => {
+            // swap texture at mid-flip (alternate)
+            const nextShowHead = (currentFlip % 2 === 0);
+            coinImage.setTexture(nextShowHead ? 'coin_tail' : 'coin_head');
+            coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+            // ensure other image is cropped small before expand
+            applyCenteredCrop(coinImage, minCropW);
+            expandHalf();
+          }
+        });
+      };
+
+      // init crop to full then start
+      coinImage.setCrop(0, 0, srcW, srcH);
+      shrinkHalf();
     };
 
     // --- Bet panel (own panel but uses same this.userBalance) ---
@@ -979,6 +1018,7 @@ export default class GameScene extends Phaser.Scene {
       if (!this.coinGameStarted) {
         // lock UI
         this.coinGameStarted = true;
+        coinSideLabel.setText("");
 
         this.coinBetButtons.forEach(b => { b.bg.disableInteractive().setFillStyle(0x333333); b.label.setColor('#888888'); });
         coinPlusBg.disableInteractive().setFillStyle(0x333333);
@@ -998,7 +1038,9 @@ export default class GameScene extends Phaser.Scene {
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('winSound', { volume: 1 }));
 
           if (this.myConfetti) {
-            this.myConfetti({ particleCount: 100, spread: 60, origin: { y: 0.35 } });
+            this.time.delayedCall(0, () => {
+              this.myConfetti({ particleCount: 100, spread: 60, origin: { y: 0.35 } });
+            });
           }
 
           const winAmount = parseFloat((this.coinBetAmount * COIN_MULTIPLIER).toFixed(2));
