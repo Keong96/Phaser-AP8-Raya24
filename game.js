@@ -29,7 +29,12 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('down_arrow', 'images/down_arrow.png');
     this.load.image('bet_higher', 'images/bet_higher.png');
     this.load.image('bet_lower', 'images/bet_lower.png');
+    this.load.image('bet_head', 'images/bet_head.png');
+    this.load.image('bet_tail', 'images/bet_tail.png');
 
+    this.load.image('coin_head', 'images/coin_head.png');
+    this.load.image('coin_tail', 'images/coin_tail.png');
+    
     this.load.audio('bgm', 'sounds/background_music.mp3');
     this.load.audio('click', 'sounds/click.mp3');
     this.load.audio('winSound', 'sounds/win.mp3');
@@ -123,7 +128,10 @@ export default class GameScene extends Phaser.Scene {
       const circle = this.add.circle(cx, cy, circleRadius, 0x333333)
         .setStrokeStyle(4, 0xffffff)
         .setInteractive({ useHandCursor: true })
-        .on('pointerdown', () => containers.forEach((c, idx) => c.setVisible(idx === i)));
+        .on('pointerdown', () => {
+          containers.forEach((c, idx) => c.setVisible(idx === i));
+          if (typeof this.setUserBalance === 'function') this.setUserBalance(this.userBalance);
+        });
 
       const label = this.add.text(cx, cy, name, {
         font: "12px Brothers",
@@ -137,6 +145,14 @@ export default class GameScene extends Phaser.Scene {
       this.navContainer.add(circle);
       this.navContainer.add(label);
     });
+  }
+
+  setUserBalance(amount) {
+    const v = parseFloat(Number(amount) || 0);
+    this.userBalance = parseFloat(v.toFixed(2));
+    const txt = `Balance: ${currency.format(this.userBalance)}`;
+    if (this.hilo && this.hilo.balanceText) this.hilo.balanceText.setText(txt);
+    if (this.coinFlip && this.coinFlip.balanceText) this.coinFlip.balanceText.setText(txt);
   }
 
   setupShop() {
@@ -297,7 +313,7 @@ export default class GameScene extends Phaser.Scene {
     // === Card (start random) ===
     let currentIndex = getRandomIndex();
     const cardKey = indexToKey(currentIndex);
-    const card = this.add.image(centerX, centerY - 100, cardKey).setOrigin(0.5);
+    const card = this.add.image(centerX, centerY - 200, cardKey).setOrigin(0.5);
     this.hiloContainer.add(card);
 
     // force card display size (keep ratio)
@@ -308,7 +324,7 @@ export default class GameScene extends Phaser.Scene {
     card.setScale(CARD_W / baseWidth, CARD_H / baseHeight);
 
     // Skip button
-    const skipY = centerY + 50;
+    const skipY = centerY - 25;
     const skipBtn = this.add.rectangle(centerX, skipY, 120, 44, 0x6666aa).setOrigin(0.5).setInteractive({ useHandCursor: true });
     const skipText = this.add.text(centerX, skipY, "Skip", { font: "20px Brothers", color: "#ffffff" }).setOrigin(0.5);
     this.addPressEffect(skipBtn, skipText);
@@ -350,11 +366,15 @@ export default class GameScene extends Phaser.Scene {
     this.hiloContainer.add(betBg);
 
     // balance text (local to hilo screen)
-    this.userBalance = (typeof this.balance === 'number') ? this.balance : (this.userBalance || 1000);
+    this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
     const balanceText = this.add.text(betPanelX - 100, betPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
       font: "20px Brothers", color: '#ffffff', align: 'center'
     }).setOrigin(0, 0.5);
     this.hiloContainer.add(balanceText);
+
+    // expose ref for sync
+    this.hilo = this.hilo || {};
+    this.hilo.balanceText = balanceText;
 
     // bet input box (display only)
     this.hiloBetAmount = 0.00;
@@ -418,7 +438,7 @@ export default class GameScene extends Phaser.Scene {
       const step = this.selectedStep;
       if (this.userBalance >= step) {
         this.hiloBetAmount = parseFloat((this.hiloBetAmount + step).toFixed(2));
-        this.userBalance = parseFloat((this.userBalance - step).toFixed(2));
+       this.setUserBalance(this.userBalance - step);
       }
       betInput.setText(currency.format(this.hiloBetAmount));
       balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
@@ -487,7 +507,7 @@ export default class GameScene extends Phaser.Scene {
     cashoutBg.on('pointerdown', () => {
       if (!this.cashoutEnabled) return;
       // add prizePool to balance
-      this.userBalance = parseFloat((this.userBalance + this.prizePool).toFixed(2));
+      this.setUserBalance(this.userBalance + this.prizePool);
       balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
 
       // play sound with unlocked fallback
@@ -507,7 +527,10 @@ export default class GameScene extends Phaser.Scene {
       skipBtn.setVisible(true);
       skipText.setVisible(true);
 
-      this.hiloBetButtons.forEach(b => b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555));
+      this.hiloBetButtons.forEach(b => {
+        b.bg.setInteractive({ useHandCursor: true }).setFillStyle(b.val === this.selectedStep ? 0x008800 : 0x555555);
+        b.label.setColor('#ffffff');
+      });
       plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
       minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
       this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
@@ -672,7 +695,10 @@ export default class GameScene extends Phaser.Scene {
           // reveal done, show skip and unlock panel
           skipBtn.setVisible(true); skipText.setVisible(true);
 
-          this.hiloBetButtons.forEach(b => { b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555); b.label.setColor('#ffffff'); });
+          this.hiloBetButtons.forEach(b => {
+            b.bg.setInteractive({ useHandCursor: true }).setFillStyle(b.val === this.selectedStep ? 0x008800 : 0x555555);
+            b.label.setColor('#ffffff');
+          });
           plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
           minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
           this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
@@ -710,10 +736,298 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setupCoinFlip() {
-    const text = this.add.text(this.contentWidth / 2, this.contentHeight / 2, "COIN FLIP", {
-      font: "32px Brothers",
-      color: "#fff"
+    const panelWidth = this.contentWidth;
+    const panelHeight = this.contentHeight;
+    const startX = 20;
+    const startY = 20;
+
+    // panel background
+    const coinPanelBgRect = this.add.rectangle(startX, startY, panelWidth - 40, panelHeight - 40, 0xffffff, 0.65)
+      .setOrigin(0).setStrokeStyle(2, 0x000000);
+    this.coinFlipContainer.add(coinPanelBgRect);
+
+    // inner area
+    const coinContentLeft = startX + 20;
+    const coinContentTop = startY + 20;
+    const coinContentW = panelWidth - 60;
+    const coinContentH = panelHeight - 80;
+    const coinCenterX = coinContentLeft + coinContentW / 2;
+    const coinCenterY = coinContentTop + coinContentH / 2 - 40;
+
+    // --- Coin visual (placeholder uses 'item' image) ---
+    const COIN_SIZE = 160;
+    const coinImage = this.add.image(coinCenterX, coinCenterY - 40, 'coin_head').setOrigin(0.5).setDisplaySize(COIN_SIZE, COIN_SIZE);
+    this.coinFlipContainer.add(coinImage);
+
+    // coin side label
+    const coinSideLabel = this.add.text(coinCenterX, coinCenterY - 40, '—', { font: "28px Brothers", color: "#ffffff" }).setOrigin(0.5);
+    coinSideLabel.setStroke('#000000', 6);
+    this.coinFlipContainer.add(coinSideLabel);
+
+    // random starting side (0 = heads, 1 = tails)
+    let coinCurrentSide = Math.random() < 0.5 ? 0 : 1;
+    coinSideLabel.setText(coinCurrentSide === 0 ? 'HEADS' : 'TAILS');
+
+    // helper to spin / reveal coin (simple rotation + label)
+    let coinIsSpinning = false;
+    const revealCoin = (finalSide, onComplete = null) => {
+      if (coinIsSpinning) return;
+      coinIsSpinning = true;
+
+      this.tweens.add({
+        targets: coinImage,
+        angle: 720,
+        scale: { from: 1.0, to: 1.05 },
+        duration: 600,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+          coinImage.setAngle(0);
+          coinImage.setScale(1);
+          coinCurrentSide = finalSide;
+          coinSideLabel.setText(finalSide === 0 ? 'HEADS' : 'TAILS');
+          coinIsSpinning = false;
+          if (typeof onComplete === 'function') onComplete();
+        }
+      });
+    };
+
+    // --- Bet panel (own panel but uses same this.userBalance) ---
+    const coinBetPanelHeight = 400;
+    const coinBetPanelX = coinContentLeft + coinContentW / 2 - 10;
+    const coinBetPanelY = coinContentTop + coinContentH - coinBetPanelHeight / 2 + 10;
+
+    const coinBetBg = this.add.rectangle(coinBetPanelX, coinBetPanelY, coinContentW, coinBetPanelHeight, 0x222222, 0.95)
+      .setOrigin(0.5).setStrokeStyle(2, 0xffd700);
+    this.coinFlipContainer.add(coinBetBg);
+
+    // balance text (shared)
+    this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
+    const coinBalanceText = this.add.text(coinBetPanelX - 100, coinBetPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
+      font: "20px Brothers", color: '#ffffff', align: 'center'
+    }).setOrigin(0, 0.5);
+    this.coinFlipContainer.add(coinBalanceText);
+
+    // expose ref for sync
+    this.coinFlip = this.coinFlip || {};
+    this.coinFlip.balanceText = coinBalanceText;
+
+    // bet input (display only)
+    this.coinBetAmount = 0.00;
+    const coinInputBg = this.add.rectangle(coinBetPanelX + 5, coinBetPanelY - 130, 280, 40, 0x000000).setOrigin(0.5).setStrokeStyle(2, 0xffffff);
+    const coinBetInput = this.add.text(coinBetPanelX + 5, coinBetPanelY - 130, currency.format(this.coinBetAmount), {
+      font: "20px Brothers", color: '#fff'
     }).setOrigin(0.5);
-    this.coinFlipContainer.add(text);
+    this.coinFlipContainer.add([coinInputBg, coinBetInput]);
+
+    // step toggle
+    const coinBetValues = [1, 5, 10, 50, 100];
+    this.coinSelectedStep = 1;
+    const coinBtnWidth = 70, coinBtnHeight = 36, coinSpacing = 15;
+    const coinTotalWidth = coinBetValues.length * coinBtnWidth + (coinBetValues.length - 1) * coinSpacing;
+    const coinStartBtnX = coinBetPanelX - coinTotalWidth / 2 + 40;
+    const coinBtnY = coinBetPanelY - 75;
+    this.coinBetButtons = [];
+
+    coinBetValues.forEach((val, idx) => {
+      const x = coinStartBtnX + idx * (coinBtnWidth + coinSpacing);
+      const b = this.add.rectangle(x, coinBtnY, coinBtnWidth, coinBtnHeight, 0x555555).setOrigin(0.5).setStrokeStyle(2, 0xffffff).setInteractive({ useHandCursor: true });
+      const label = this.add.text(x, coinBtnY, val.toString(), { font: "18px Brothers", color: "#fff" }).setOrigin(0.5);
+
+      b.on("pointerdown", () => {
+        this.coinSelectedStep = val;
+        this.coinBetButtons.forEach(btn => btn.bg.setFillStyle(0x555555));
+        b.setFillStyle(0x008800);
+      });
+
+      this.addPressEffect(b, label);
+      this.coinFlipContainer.add([b, label]);
+      this.coinBetButtons.push({ bg: b, label, val });
+    });
+    if (this.coinBetButtons[0]) this.coinBetButtons[0].bg.setFillStyle(0x008800);
+
+    // plus / minus (reserve when increasing)
+    const coinMinusBg = this.add.rectangle(coinBetPanelX - 175, coinBetPanelY - 130, 50, 40, 0x884444).setOrigin(0.5).setInteractive();
+    const coinMinusText = this.add.text(coinMinusBg.x, coinMinusBg.y, "-", { font: "24px Brothers", color: "#fff" }).setOrigin(0.5);
+    coinMinusBg.on("pointerdown", () => {
+      const step = this.coinSelectedStep;
+      if (this.coinBetAmount >= step) {
+        this.coinBetAmount = parseFloat((this.coinBetAmount - step).toFixed(2));
+        this.userBalance = parseFloat((this.userBalance + step).toFixed(2));
+      } else {
+        this.userBalance = parseFloat((this.userBalance + this.coinBetAmount).toFixed(2));
+        this.coinBetAmount = 0;
+      }
+      coinBetInput.setText(currency.format(this.coinBetAmount));
+      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+    });
+    this.addPressEffect(coinMinusBg, coinMinusText);
+
+    const coinPlusBg = this.add.rectangle(coinBetPanelX + 185, coinBetPanelY - 130, 50, 40, 0x448844).setOrigin(0.5).setInteractive();
+    const coinPlusText = this.add.text(coinPlusBg.x, coinPlusBg.y, "+", { font: "24px Brothers", color: "#fff" }).setOrigin(0.5);
+    coinPlusBg.on("pointerdown", () => {
+      const step = this.coinSelectedStep;
+      if (this.userBalance >= step) {
+        this.coinBetAmount = parseFloat((this.coinBetAmount + step).toFixed(2));
+        this.setUserBalance(this.userBalance - step);
+      }
+      coinBetInput.setText(currency.format(this.coinBetAmount));
+      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+    });
+    this.addPressEffect(coinPlusBg, coinPlusText);
+    this.coinFlipContainer.add([coinMinusBg, coinMinusText, coinPlusBg, coinPlusText]);
+
+    // percent quick buttons
+    const coinPercents = [0, 25, 50, 75, 100];
+    const coinQuickStartX = coinBetPanelX - coinTotalWidth / 2 + 40;
+    const coinQuickY = coinBetPanelY - 30;
+    this.coinPercentButtons = [];
+
+    coinPercents.forEach((p, idx) => {
+      const px = coinQuickStartX + idx * 85;
+      const pBg = this.add.rectangle(px, coinQuickY, 70, 32, 0x444444).setOrigin(0.5).setInteractive({ useHandCursor: true });
+      const pLabel = p === 0 ? "Clear" : `${p}%`;
+      const pText = this.add.text(px, coinQuickY, pLabel, { font: "16px Brothers", color: "#fff" }).setOrigin(0.5);
+
+      pBg.on('pointerdown', () => {
+        const availableBalance = parseFloat((this.userBalance + this.coinBetAmount).toFixed(2));
+        const newBet = p === 0 ? 0 : parseFloat((availableBalance * (p / 100)).toFixed(2));
+        this.coinBetAmount = newBet;
+        this.userBalance = parseFloat((availableBalance - newBet).toFixed(2));
+        coinBetInput.setText(currency.format(this.coinBetAmount));
+        coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      });
+
+      this.addPressEffect(pBg, pText);
+      this.coinFlipContainer.add([pBg, pText]);
+      this.coinPercentButtons.push(pBg);
+    });
+
+    // Heads / Tails buttons
+    const coinHeadBtn = this.add.image(coinBetPanelX + coinContentW / 4 - 25, coinBetPanelY + 50, 'bet_head')
+      .setOrigin(0.5).setDisplaySize(158, 69).setInteractive({ useHandCursor: true });
+    const coinTailBtn = this.add.image(coinBetPanelX + coinContentW / 4 - 225, coinBetPanelY + 50, 'bet_tail')
+      .setOrigin(0.5).setDisplaySize(158, 69).setInteractive({ useHandCursor: true });
+
+    this.addPressEffect(coinHeadBtn);
+    this.addPressEffect(coinTailBtn);
+    this.coinFlipContainer.add([coinHeadBtn, coinTailBtn]);
+
+    // prize pool & cashout (coin-specific)
+    this.coinPrizePool = 0.00;
+    const coinCashoutBg = this.add.rectangle(coinBetPanelX + coinContentW / 4 - 125, coinBetPanelY + 125, 280, 40, 0x000000)
+      .setOrigin(0.5).setStrokeStyle(2, 0xffd700);
+    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "Cashout", { font: "20px Brothers", color: '#888888' }).setOrigin(0.5);
+    this.addPressEffect(coinCashoutBg, coinCashoutText);
+    this.coinCashoutEnabled = false;
+
+    const updateCoinCashout = () => {
+      if (this.coinPrizePool > 0) {
+        coinCashoutText.setText(`Cashout $${currency.format(this.coinPrizePool)}`);
+        coinCashoutText.setColor('#FFD700');
+        this.coinCashoutEnabled = true;
+        coinCashoutBg.setInteractive({ useHandCursor: true });
+      } else {
+        coinCashoutText.setText("Cashout");
+        coinCashoutText.setColor('#888888');
+        this.coinCashoutEnabled = false;
+        coinCashoutBg.disableInteractive();
+      }
+    };
+
+    coinCashoutBg.on('pointerdown', () => {
+      if (!this.coinCashoutEnabled) return;
+      this.userBalance = parseFloat((this.userBalance + this.coinPrizePool).toFixed(2));
+      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+
+      if (!this.sound.locked) this.sound.play('ka-chingSound', { volume: 1 });
+      else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('ka-chingSound', { volume: 1 }));
+
+      this.coinPrizePool = 0;
+      updateCoinCashout();
+
+      // reset controls
+      this.coinGameStarted = false;
+      this.coinBetButtons.forEach(b => b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555));
+      coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
+      coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
+      this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
+      coinBetInput.setColor('#ffffff');
+    });
+
+    updateCoinCashout();
+    this.coinFlipContainer.add([coinCashoutBg, coinCashoutText]);
+
+    // Flip / round logic
+    this.coinGameStarted = false;
+    const COIN_MULTIPLIER = 1.95; // payout multiplier for correct guess
+
+    const startCoinRound = (choiceIsHeads) => {
+      if (this.coinBetAmount <= 0) return;
+
+      if (!this.coinGameStarted) {
+        // lock UI
+        this.coinGameStarted = true;
+
+        this.coinBetButtons.forEach(b => { b.bg.disableInteractive().setFillStyle(0x333333); b.label.setColor('#888888'); });
+        coinPlusBg.disableInteractive().setFillStyle(0x333333);
+        coinMinusBg.disableInteractive().setFillStyle(0x333333);
+        this.coinPercentButtons.forEach(pBg => pBg.disableInteractive().setFillStyle(0x333333));
+        coinBetInput.setColor('#888888');
+      }
+
+      // determine result
+      const result = Math.random() < 0.5 ? 0 : 1; // 0 heads, 1 tails
+      const userWin = (choiceIsHeads && result === 0) || (!choiceIsHeads && result === 1);
+
+      // reveal animation then resolve
+      revealCoin(result, () => {
+        if (userWin) {
+          if (!this.sound.locked) this.sound.play('winSound', { volume: 1 });
+          else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('winSound', { volume: 1 }));
+
+          if (this.myConfetti) {
+            this.myConfetti({ particleCount: 100, spread: 60, origin: { y: 0.35 } });
+          }
+
+          const winAmount = parseFloat((this.coinBetAmount * COIN_MULTIPLIER).toFixed(2));
+          this.coinPrizePool = parseFloat((this.coinPrizePool + winAmount).toFixed(2));
+          updateCoinCashout();
+        } else {
+          // loss: bet is consumed (already reserved when placing bet)
+          if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
+          else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
+
+          this.coinPrizePool = 0;
+          updateCoinCashout();
+          this.coinGameStarted = false;
+
+          // show controls again
+          this.coinBetButtons.forEach(b => { b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555); b.label.setColor('#ffffff'); });
+          coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
+          coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
+          this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
+          coinBetInput.setColor('#ffffff');
+        }
+
+        // keep balance text in sync (balance updated on bet change and on cashout)
+        coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      });
+    };
+
+    // wire up head/tail buttons
+    coinHeadBtn.on('pointerdown', () => startCoinRound(true));
+    coinTailBtn.on('pointerdown', () => startCoinRound(false));
+
+    // store refs
+    this.coinFlip = {
+      coinImage,
+      coinSideLabel,
+      coinBetInput,
+      coinHeadBtn,
+      coinTailBtn,
+      coinBalanceText,
+      updateCoinCashout,
+      coinCurrentSide
+    };
   }
 }
