@@ -889,6 +889,18 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5).setStrokeStyle(2, 0xffd700);
     this.coinFlipContainer.add(coinBetBg);
 
+    const slotSpacing = 100;
+    this.coinFlipHistorySlot = [];
+
+    for (let i = 0; i < 5; i++) {
+      let slot = this.add.image(coinBetPanelX + 3 + (i - 2) * slotSpacing, coinBetPanelY - 265, 'history_slot')
+      .setDisplaySize(100, 100)
+      .setOrigin(0.5);
+
+      this.coinFlipHistorySlot.push(slot)
+    }
+    this.coinFlipContainer.add(this.coinFlipHistorySlot);
+
     // balance text (shared)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
     const coinBalanceText = this.add.text(coinBetPanelX - 100, coinBetPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
@@ -1092,27 +1104,29 @@ export default class GameScene extends Phaser.Scene {
           this.coinPrizePool = parseFloat((this.coinPrizePool + winAmount).toFixed(2));
           updateCoinCashout();
 
-          // add coin result into next available slot
-          const nextSlot = this.coinFlipHistorySlot.find(slot => !slot.coinImage);
-          if (nextSlot) {
-            const iconKey = result === 0 ? 'coin_heads' : 'coin_tails';
-            const icon = this.add.image(nextSlot.x, nextSlot.y, iconKey)
-              .setDisplaySize(80, 80)
-              .setDepth(nextSlot.depth + 1)
+          // add coin result into first empty slot
+          const emptySlot = this.coinFlipHistorySlot.find(s => !s.coinImage);
+          if (emptySlot) {
+            const coinKey = result === 0 ? 'coin_head' : 'coin_tail';
+            const coinOnSlot = this.add.image(emptySlot.x - 3, emptySlot.y - 3, coinKey)
+              .setDisplaySize(75, 75)
               .setOrigin(0.5);
-            nextSlot.coinImage = icon;
+            emptySlot.coinImage = coinOnSlot;
+            this.coinFlipContainer.add(coinOnSlot);
           }
 
-          // check if all 5 slots filled, then reset
-          if (this.coinFlipHistorySlot.every(slot => slot.coinImage)) {
-            this.time.delayedCall(1000, () => {
-              this.coinFlipHistorySlot.forEach(slot => {
-                if (slot.coinImage) {
-                  slot.coinImage.destroy();
-                  slot.coinImage = null;
-                }
-              });
+          // check if all 5 slots filled
+          const filledSlots = this.coinFlipHistorySlot.filter(s => s.coinImage).length;
+          if (filledSlots >= 5) {
+            this.coinFlipHistorySlot.forEach(slot => {
+              if (slot.coinImage) {
+                slot.coinImage.destroy();
+                slot.coinImage = null;
+              }
             });
+            this.coinPrizePool = 0;
+            updateCoinCashout();
+            this.coinGameStarted = false;
           }
 
         } else {
@@ -1120,11 +1134,6 @@ export default class GameScene extends Phaser.Scene {
           if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
 
-          this.coinPrizePool = 0;
-          updateCoinCashout();
-          this.coinGameStarted = false;
-
-          // clear history on loss
           this.coinFlipHistorySlot.forEach(slot => {
             if (slot.coinImage) {
               slot.coinImage.destroy();
@@ -1132,7 +1141,11 @@ export default class GameScene extends Phaser.Scene {
             }
           });
 
-          // unlock controls
+          this.coinPrizePool = 0;
+          updateCoinCashout();
+          this.coinGameStarted = false;
+
+          // unlock UI
           this.coinBetButtons.forEach(b => { b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555); b.label.setColor('#ffffff'); });
           coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
           coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
