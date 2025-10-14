@@ -5,7 +5,7 @@ export default class HomeScene extends Phaser.Scene {
     }
   
     preload() {
-      this.load.image('background', 'images/background.png');
+      this.load.image('background2', 'images/background2.png');
       this.load.image('logo', 'images/logo.png');
       this.load.image('tapToBegin', 'images/tap-to-begin.png');
       this.load.image('loading', 'images/loading-icon.png');
@@ -23,7 +23,7 @@ export default class HomeScene extends Phaser.Scene {
       .setVisible(false);
   
       this.loading = this.add.image(centerX, centerY, 'loading').setDisplaySize(240, 240).setDepth(2).setVisible(false);
-      this.add.image(centerX, centerY, 'background').setDisplaySize(1920, 1080);
+      this.add.image(centerX, centerY, 'background2').setDisplaySize(1920, 1080);
       this.add.image(centerX, centerY-150, 'logo').setDisplaySize(416, 224).setDepth(1);
   
       let startGameButton = this.add.image(centerX, centerY, 'tapToBegin').setDisplaySize(1920, 1080).setInteractive();
