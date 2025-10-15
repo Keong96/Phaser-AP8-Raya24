@@ -329,7 +329,7 @@ export default class GameScene extends Phaser.Scene {
     const centerX = contentLeft + contentW / 2;
     const centerY = contentTop + contentH / 2 - 30;
 
-    const safeBtn = this.add.image(startX + panelWidth / 2 - 100, startY + 120, 'safe_icon')
+    const safeBtn = this.add.image(startX + panelWidth / 2 - 250, startY + 120, 'safe_icon')
       .setOrigin(0.5)
       .setDisplaySize(40, 40)
       .setInteractive();
@@ -338,7 +338,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.addPressEffect(safeBtn);
 
-    const helpBtn = this.add.image(startX + panelWidth / 2 - 160, startY + 120, 'help_icon')
+    const helpBtn = this.add.image(startX + panelWidth / 2 - 195, startY + 120, 'help_icon')
       .setOrigin(0.5)
       .setDisplaySize(40, 40)
       .setInteractive();
@@ -347,7 +347,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.addPressEffect(helpBtn);
 
-    const musicBtn = this.add.image(startX + panelWidth / 2 - 220, startY + 120, 'music_icon')
+    const musicBtn = this.add.image(startX + panelWidth / 2 - 140, startY + 120, 'music_icon')
       .setOrigin(0.5)
       .setDisplaySize(40, 40)
       .setInteractive();
@@ -863,7 +863,7 @@ export default class GameScene extends Phaser.Scene {
     const coinCenterX = coinContentLeft + coinContentW / 2;
     const coinCenterY = coinContentTop + coinContentH / 2 - 40;
 
-    const safeBtn = this.add.image(startX + panelWidth / 2 - 100, startY + 120, 'safe_icon')
+    const safeBtn = this.add.image(startX + panelWidth / 2 - 250, startY + 120, 'safe_icon')
       .setOrigin(0.5)
       .setDisplaySize(40, 40)
       .setInteractive();
@@ -872,7 +872,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.addPressEffect(safeBtn);
 
-    const helpBtn = this.add.image(startX + panelWidth / 2 - 160, startY + 120, 'help_icon')
+    const helpBtn = this.add.image(startX + panelWidth / 2 - 195, startY + 120, 'help_icon')
       .setOrigin(0.5)
       .setDisplaySize(40, 40)
       .setInteractive();
@@ -881,7 +881,7 @@ export default class GameScene extends Phaser.Scene {
     });
     this.addPressEffect(helpBtn);
 
-    const musicBtn = this.add.image(startX + panelWidth / 2 - 220, startY + 120, 'music_icon')
+    const musicBtn = this.add.image(startX + panelWidth / 2 - 140, startY + 120, 'music_icon')
       .setOrigin(0.5)
       .setDisplaySize(40, 40)
       .setInteractive();
