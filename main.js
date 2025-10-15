@@ -3,7 +3,7 @@ import GameScene from './game.js';
 
 const isMobile = /mobile/i.test(navigator.userAgent);
 
-const config = {
+export const config = {
   type: Phaser.AUTO,
   scale: {
     mode: Phaser.Scale.ENVELOP,
@@ -28,5 +28,3 @@ const config = {
   },
   parent: 'phaser-container'
 };
-
-const game = new Phaser.Game(config);

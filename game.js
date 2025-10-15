@@ -36,6 +36,7 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('help_icon', 'images/help_icon.png');
     this.load.image('music_icon', 'images/music_icon.png');
 
+    this.load.image('shadow', 'images/shadow.png');
     this.load.image('card_back', 'images/card_back.png');
     this.load.image('up_arrow', 'images/up_arrow.png');
     this.load.image('down_arrow', 'images/down_arrow.png');
@@ -167,7 +168,7 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => {
-        if (typeof this.openDepositModal === 'function') this.openDepositModal();
+        this.openDepositModal();
       });
 
     this.addPressEffect(depositBtn, null, 4);
@@ -187,12 +188,16 @@ export default class GameScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
           containers.forEach((c, idx) => c.setVisible(idx === i));
-          if (typeof this.setUserBalance === 'function') this.setUserBalance(this.userBalance);
+          this.setUserBalance(this.userBalance);
         });
 
       this.addPressEffect(btn, null, 4);
       this.navContainer.add(btn);
     });
+  }
+
+  openDepositModal() {
+    
   }
 
   setUserBalance(amount) {
@@ -394,12 +399,10 @@ export default class GameScene extends Phaser.Scene {
     const baseHeight = (tex && tex.source && tex.source[0]) ? tex.source[0].height : card.height || CARD_H;
     card.setScale(CARD_W / baseWidth, CARD_H / baseHeight);
 
-    // Skip button
-    const skipY = centerY - 25;
-    const skipBtn = this.add.rectangle(centerX, skipY, 120, 44, 0x6666aa).setOrigin(0.5).setInteractive({ useHandCursor: true });
-    const skipText = this.add.text(centerX, skipY, "Skip", { font: "20px Brothers", color: "#ffffff" }).setOrigin(0.5);
-    this.addPressEffect(skipBtn, skipText);
-    this.hiloContainer.add([skipBtn, skipText]);
+    const shadow = this.add.image(centerX, centerY - 50, 'shadow')
+    .setOrigin(0.5)
+    .setDisplaySize(172, 30);
+    this.hiloContainer.add(shadow);
 
     // arrows + rate texts
     const arrowOffsetX = Math.min(220, contentW * 0.32);
@@ -436,7 +439,9 @@ export default class GameScene extends Phaser.Scene {
     this.hiloHistorySlot = [];
 
     for (let i = 0; i < 5; i++) {
-      let slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 255,'history_slot').setDisplaySize(100, 100).setOrigin(0.5);
+      let slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 240,'history_slot')
+      .setDisplaySize(64, 64)
+      .setOrigin(0.5);
       this.hiloHistorySlot.push(slot);
     }
 
@@ -448,8 +453,8 @@ export default class GameScene extends Phaser.Scene {
 
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const balanceText = this.add.text(betPanelX - 100, betPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
-      font: "20px Brothers", color: '#000000', align: 'center'
+    const balanceText = this.add.text(betPanelX - 200, betPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
+      font: "20px Brothers", color: '#000000', align: 'left'
     }).setOrigin(0, 0.5);
     this.hiloContainer.add(balanceText);
 
@@ -459,12 +464,12 @@ export default class GameScene extends Phaser.Scene {
 
     // bet input box (display only)
     this.hiloBetAmount = 0.00;
-    const inputBg = this.add.rectangle(betPanelX + 5, betPanelY - 130, 280, 40, 0xffffff).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+    const inputBg = this.add.rectangle(betPanelX + 5, betPanelY - 130, 280, 40, 0xBBBBBB).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
     this.hiloContainer.add(inputBg);
 
-    const betInput = this.add.text(betPanelX + 5, betPanelY - 130, currency.format(this.hiloBetAmount), {
-      font: "20px Brothers", color: '#000'
-    }).setOrigin(0.5);
+    const betInput = this.add.text(betPanelX - 125, betPanelY - 130, currency.format(this.hiloBetAmount), {
+      font: "20px Brothers", color: '#000',
+    }).setOrigin(0, 0.5);
     this.hiloContainer.add(betInput);
 
     // toggle group (step values)
@@ -485,7 +490,7 @@ export default class GameScene extends Phaser.Scene {
         .setDisplaySize(btnWidth, btnHeight)
         .setInteractive({ useHandCursor: true });
 
-      const label = this.add.text(x, btnY, val.toString(), { font: '18px Brothers', color: '#000' }).setOrigin(0.5);
+      const label = this.add.text(x, btnY, val.toString(), { font: '18px Brothers', color: '#fff' }).setOrigin(0.5);
 
       b.on('pointerdown', () => {
         this.selectedStep = val;
@@ -554,7 +559,7 @@ export default class GameScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       const pLabel = p === 0 ? 'Clear' : `${p}%`;
-      const pText = this.add.text(px, quickY, pLabel, { font: '16px Brothers', color: '#000' }).setOrigin(0.5);
+      const pText = this.add.text(px, quickY, pLabel, { font: '16px Brothers', color: '#fff' }).setOrigin(0.5);
 
       pBg.on('pointerdown', () => {
         const availableBalance = parseFloat((this.userBalance + this.hiloBetAmount).toFixed(2));
@@ -585,19 +590,19 @@ export default class GameScene extends Phaser.Scene {
     .setOrigin(0.5)
     .setDisplaySize(425, 45)
     .setInteractive();
-    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "Cashout", { font: "20px Brothers", color: '#888888' }).setOrigin(0.5);
+    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "CASHOUT", { font: "20px Brothers", color: '#fff' }).setOrigin(0.5);
     this.addPressEffect(cashoutBg, cashoutText);
     this.cashoutEnabled = false;
 
     this.updateCashoutButton = () => {
       if (this.prizePool > 0) {
         cashoutText.setText(`Cashout $${currency.format(this.prizePool)}`);
-        cashoutText.setColor('#FFD700');
+        cashoutText.setColor('#fff');
         this.cashoutEnabled = true;
         cashoutBg.setInteractive({ useHandCursor: true });
       } else {
         cashoutText.setText("Cashout");
-        cashoutText.setColor('#888888');
+        cashoutText.setColor('#FFF');
         this.cashoutEnabled = false;
         cashoutBg.disableInteractive();
       }
@@ -632,16 +637,14 @@ export default class GameScene extends Phaser.Scene {
 
       // reset game state
       this.hiloGameStarted = false;
-      skipBtn.setVisible(true);
-      skipText.setVisible(true);
 
       this.hiloBetButtons.forEach(b => {
-        b.bg.setInteractive({ useHandCursor: true }).setFillStyle(b.val === this.selectedStep ? 0x008800 : 0x555555);
+        b.bg.setInteractive({ useHandCursor: true })[b.val === this.selectedStep ? 'setTint' : 'clearTint'](0x8a6b52);
         b.label.setColor('#ffffff');
       });
-      plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
-      minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
-      this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
+      plusBg.setInteractive({ useHandCursor: true }).clearTint();
+      minusBg.setInteractive({ useHandCursor: true }).clearTint();
+      this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
       betInput.setColor('#ffffff');
     });
 
@@ -726,26 +729,15 @@ export default class GameScene extends Phaser.Scene {
       });
     };
 
-    // skip logic (flip to random new card)
-    skipBtn.on('pointerdown', () => {
-      let nextIndex = getRandomIndex();
-      if (nextIndex === currentIndex && 52 > 1) {
-        for (let i = 0; i < 6 && nextIndex === currentIndex; i++) nextIndex = getRandomIndex();
-      }
-      revealCard(nextIndex, () => updateRates(currentIndex));
-    });
-
     this.hiloGameStarted = false;
     const startRound = (isHigher) => {
       if (this.hiloBetAmount <= 0) return;
 
       if (!this.hiloGameStarted) {
-        skipBtn.setVisible(false); skipText.setVisible(false);
-
-        this.hiloBetButtons.forEach(b => { b.bg.disableInteractive().setFillStyle(0x333333); b.label.setColor('#888888'); });
-        plusBg.disableInteractive().setFillStyle(0x333333);
-        minusBg.disableInteractive().setFillStyle(0x333333);
-        this.hiloPercentButtons.forEach(pBg => pBg.disableInteractive().setFillStyle(0x333333));
+        this.hiloBetButtons.forEach(b => { b.bg.disableInteractive().setTint(0x333333); b.label.setColor('#888888'); });
+        plusBg.disableInteractive().setTint(0x333333);
+        minusBg.disableInteractive().setTint(0x333333);
+        this.hiloPercentButtons.forEach(pBg => pBg.disableInteractive().setTint(0x333333));
         betInput.setColor('#888888');
 
         this.hiloGameStarted = true;
@@ -783,8 +775,8 @@ export default class GameScene extends Phaser.Scene {
           // add card image on first empty slot
           const emptySlot = this.hiloHistorySlot.find(s => !s.cardImage);
           if (emptySlot) {
-            const cardOnSlot = this.add.image(emptySlot.x - 3, emptySlot.y - 3, indexToKey(currentIndex))
-              .setDisplaySize(60, 75)
+            const cardOnSlot = this.add.image(emptySlot.x, emptySlot.y, indexToKey(currentIndex))
+              .setDisplaySize(48, 48)
               .setOrigin(0.5);
             emptySlot.cardImage = cardOnSlot;
             this.hiloContainer.add(cardOnSlot);
@@ -821,17 +813,14 @@ export default class GameScene extends Phaser.Scene {
           this.updateCashoutButton();
           this.hiloGameStarted = false;
 
-          // reveal done, show skip and unlock panel
-          skipBtn.setVisible(true); skipText.setVisible(true);
-
           this.hiloBetButtons.forEach(b => {
-            b.bg.setInteractive({ useHandCursor: true }).setFillStyle(b.val === this.selectedStep ? 0x008800 : 0x555555);
+            b.bg.setInteractive({ useHandCursor: true })[b.val === this.selectedStep ? 'setTint' : 'clearTint'](0x8a6b52);
             b.label.setColor('#ffffff');
           });
-          plusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
-          minusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
-          this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
-          betInput.setColor('#ffffff');
+          plusBg.setInteractive({ useHandCursor: true }).clearTint();
+          minusBg.setInteractive({ useHandCursor: true }).clearTint();
+          this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
+          betInput.setColor('#000');
         }
 
         balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
@@ -852,8 +841,6 @@ export default class GameScene extends Phaser.Scene {
       downBtnImg,
       leftArrowImg,
       rightArrowImg,
-      skipBtn,
-      skipText,
       currentIndex
     };
   }
@@ -921,6 +908,11 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDisplaySize(COIN_SIZE, COIN_SIZE);
     this.coinFlipContainer.add(coinImage);
+    
+    const shadow = this.add.image(coinCenterX, coinCenterY + 25, 'shadow')
+    .setOrigin(0.5)
+    .setDisplaySize(172, 30);
+    this.coinFlipContainer.add(shadow);
 
     let coinIsFlipping = false;
     const revealCoin = (finalSide, onComplete = null) => {
@@ -931,7 +923,7 @@ export default class GameScene extends Phaser.Scene {
       const srcW = (coinImage.frame && coinImage.frame.width) ? coinImage.frame.width : COIN_SIZE;
       const srcH = (coinImage.frame && coinImage.frame.height) ? coinImage.frame.height : COIN_SIZE;
 
-      const flipCount = 32;
+      const flipCount = 16;
       const flipDuration = 20; // ms per half flip
       const minCropW = Math.max(4, Math.round(srcW * 0.04)); // small safe minimum
       let currentFlip = 0;
@@ -1013,18 +1005,17 @@ export default class GameScene extends Phaser.Scene {
     this.coinFlipHistorySlot = [];
 
     for (let i = 0; i < 5; i++) {
-      let slot = this.add.image(coinBetPanelX + 3 + (i - 2) * slotSpacing, coinBetPanelY - 255, 'history_slot')
-      .setDisplaySize(100, 100)
+      let slot = this.add.image(coinBetPanelX + 3 + (i - 2) * slotSpacing, coinBetPanelY - 240, 'history_slot')
+      .setDisplaySize(64, 64)
       .setOrigin(0.5);
-
       this.coinFlipHistorySlot.push(slot)
     }
     this.coinFlipContainer.add(this.coinFlipHistorySlot);
 
     // balance text (shared)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const coinBalanceText = this.add.text(coinBetPanelX - 100, coinBetPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
-      font: "20px Brothers", color: '#000000', align: 'center'
+    const coinBalanceText = this.add.text(coinBetPanelX - 200, coinBetPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
+      font: "20px Brothers", color: '#000000', align: 'left'
     }).setOrigin(0, 0.5);
     this.coinFlipContainer.add(coinBalanceText);
 
@@ -1034,11 +1025,11 @@ export default class GameScene extends Phaser.Scene {
 
     // bet input (display only)
     this.coinBetAmount = 0.00;
-    const coinInputBg = this.add.rectangle(coinBetPanelX + 5, coinBetPanelY - 130, 280, 40, 0xffffff).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+    const coinInputBg = this.add.rectangle(coinBetPanelX + 5, coinBetPanelY - 130, 280, 40, 0xBBBBBB).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
 
-    const coinBetInput = this.add.text(coinBetPanelX + 5, coinBetPanelY - 130, currency.format(this.coinBetAmount), {
+    const coinBetInput = this.add.text(coinBetPanelX - 125, coinBetPanelY - 130, currency.format(this.coinBetAmount), {
       font: "20px Brothers", color: '#000'
-    }).setOrigin(0.5);
+    }).setOrigin(0, 0.5);
     this.coinFlipContainer.add([coinInputBg, coinBetInput]);
 
     // step toggle
@@ -1059,7 +1050,7 @@ export default class GameScene extends Phaser.Scene {
         .setDisplaySize(coinBtnWidth, coinBtnHeight)
         .setInteractive({ useHandCursor: true });
 
-      const label = this.add.text(x, coinBtnY, val.toString(), { font: '18px Brothers', color: '#000' }).setOrigin(0.5);
+      const label = this.add.text(x, coinBtnY, val.toString(), { font: '18px Brothers', color: '#fff' }).setOrigin(0.5);
 
       b.on('pointerdown', () => {
         this.coinSelectedStep = val;
@@ -1125,7 +1116,7 @@ export default class GameScene extends Phaser.Scene {
       pBg.setDisplaySize(70, 32);
 
       const pLabel = p === 0 ? "Clear" : `${p}%`;
-      const pText = this.add.text(px, coinQuickY, pLabel, { font: "16px Brothers", color: "#000" }).setOrigin(0.5);
+      const pText = this.add.text(px, coinQuickY, pLabel, { font: "16px Brothers", color: "#fff" }).setOrigin(0.5);
 
       pBg.on('pointerdown', () => {
         const availableBalance = parseFloat((this.userBalance + this.coinBetAmount).toFixed(2));
@@ -1157,19 +1148,19 @@ export default class GameScene extends Phaser.Scene {
     .setOrigin(0.5)
     .setDisplaySize(425, 45)
     .setInteractive();
-    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "Cashout", { font: "20px Brothers", color: '#888888' }).setOrigin(0.5);
+    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "CASHOUT", { font: "20px Brothers", color: '#FFF' }).setOrigin(0.5);
     this.addPressEffect(coinCashoutBg, coinCashoutText);
     this.coinCashoutEnabled = false;
 
     const updateCoinCashout = () => {
       if (this.coinPrizePool > 0) {
         coinCashoutText.setText(`Cashout $${currency.format(this.coinPrizePool)}`);
-        coinCashoutText.setColor('#FFD700');
+        coinCashoutText.setColor('#FFF');
         this.coinCashoutEnabled = true;
         coinCashoutBg.setInteractive({ useHandCursor: true });
       } else {
         coinCashoutText.setText("Cashout");
-        coinCashoutText.setColor('#888888');
+        coinCashoutText.setColor('#FFF');
         this.coinCashoutEnabled = false;
         coinCashoutBg.disableInteractive();
       }
@@ -1189,11 +1180,11 @@ export default class GameScene extends Phaser.Scene {
 
       // reset game state
       this.coinGameStarted = false;
-      this.coinBetButtons.forEach(b => b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555));
-      coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
-      coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
-      this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
-      coinBetInput.setColor('#ffffff');
+      this.coinBetButtons.forEach(b => {b.bg.setInteractive({ useHandCursor: true }).clearTint(); b.label.setColor('#fff');});
+      coinPlusBg.setInteractive({ useHandCursor: true }).clearTint();
+      coinMinusBg.setInteractive({ useHandCursor: true }).clearTint();
+      this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
+      coinBetInput.setColor('#000');
 
       // clear coin history
       this.coinFlipHistorySlot.forEach(slot => {
@@ -1218,10 +1209,10 @@ export default class GameScene extends Phaser.Scene {
         // lock UI
         this.coinGameStarted = true;
 
-        this.coinBetButtons.forEach(b => { b.bg.disableInteractive().setFillStyle(0x333333); b.label.setColor('#888888'); });
-        coinPlusBg.disableInteractive().setFillStyle(0x333333);
-        coinMinusBg.disableInteractive().setFillStyle(0x333333);
-        this.coinPercentButtons.forEach(pBg => pBg.disableInteractive().setFillStyle(0x333333));
+        this.coinBetButtons.forEach(b => { b.bg.disableInteractive().setTint(0x333333); b.label.setColor('#888888'); });
+        coinPlusBg.disableInteractive().setTint(0x333333);
+        coinMinusBg.disableInteractive().setTint(0x333333);
+        this.coinPercentButtons.forEach(pBg => pBg.disableInteractive().setTint(0x333333));
         coinBetInput.setColor('#888888');
       }
 
@@ -1247,8 +1238,8 @@ export default class GameScene extends Phaser.Scene {
           const emptySlot = this.coinFlipHistorySlot.find(s => !s.coinImage);
           if (emptySlot) {
             const coinKey = result === 0 ? 'coin_head' : 'coin_tail';
-            const coinOnSlot = this.add.image(emptySlot.x - 3, emptySlot.y - 3, coinKey)
-              .setDisplaySize(75, 75)
+            const coinOnSlot = this.add.image(emptySlot.x, emptySlot.y, coinKey)
+              .setDisplaySize(48, 48)
               .setOrigin(0.5);
             emptySlot.coinImage = coinOnSlot;
             this.coinFlipContainer.add(coinOnSlot);
@@ -1285,10 +1276,13 @@ export default class GameScene extends Phaser.Scene {
           this.coinGameStarted = false;
 
           // unlock UI
-          this.coinBetButtons.forEach(b => { b.bg.setInteractive({ useHandCursor: true }).setFillStyle(0x555555); b.label.setColor('#ffffff'); });
-          coinPlusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x448844);
-          coinMinusBg.setInteractive({ useHandCursor: true }).setFillStyle(0x884444);
-          this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).setFillStyle(0x444444));
+          this.coinBetButtons.forEach(b => {
+            b.bg.setInteractive({ useHandCursor: true })[b.val === this.coinSelectedStep ? 'setTint' : 'clearTint'](0x8a6b52);
+            b.label.setColor('#ffffff');
+          });
+          coinPlusBg.setInteractive({ useHandCursor: true }).clearTint();
+          coinMinusBg.setInteractive({ useHandCursor: true }).clearTint();
+          this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
           coinBetInput.setColor('#ffffff');
         }
 
@@ -1310,5 +1304,17 @@ export default class GameScene extends Phaser.Scene {
       updateCoinCashout,
       coinCurrentSide
     };
+  }
+
+  handleSafeClick() {
+
+  }
+
+  showHelpPopup() {
+
+  }
+
+  toggleMusic() {
+
   }
 }
