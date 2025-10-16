@@ -100,8 +100,8 @@ export default class GameScene extends Phaser.Scene {
     const navX = contentX + this.contentWidth;
 
     // containers (positioned at contentX so children use same local coords)
-    this.shopContainer = this.add.container(contentX, 0).setVisible(true);
-    this.hiloContainer = this.add.container(contentX, 0).setVisible(false);
+    this.shopContainer = this.add.container(contentX, 0).setVisible(false);
+    this.hiloContainer = this.add.container(contentX, 0).setVisible(true);
     this.coinFlipContainer = this.add.container(contentX, 0).setVisible(false);
 
     // build screens
