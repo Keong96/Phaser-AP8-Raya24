@@ -151,13 +151,13 @@ export default class GameScene extends Phaser.Scene {
 
     // user info (username + token)
     const usernameText = this.add.text(startX - panelWidth / 2 - 60, centerY - 25, 'Donald Trump', {
-      font: '20px Brothers',
+      font: '20px Inter',
       color: '#B68E62',
       align: 'left'
     }).setOrigin(0, 0.5);
 
     this.tokenText = this.add.text(startX - panelWidth / 2 - 60, centerY - 1, 'Token: 12345 coins', {
-      font: '16px Brothers',
+      font: '16px Inter',
       color: '#B68E62',
       align: 'left'
     }).setOrigin(0, 0.5);
@@ -263,7 +263,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Item name
       const name = this.add.text(0, 30, `Item ${i + 1}`, {
-        font: "16px Brothers",
+        font: "16px Inter",
         color: "#111111",
         align: "center"
       }).setOrigin(0.5);
@@ -271,7 +271,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Price
       const price = this.add.text(0, 50, `$${(i + 1) * 10}`, {
-        font: "14px Brothers",
+        font: "14px Inter",
         color: "#008800"
       }).setOrigin(0.5);
       itemContainer.add(price);
@@ -284,7 +284,7 @@ export default class GameScene extends Phaser.Scene {
         .setOrigin(0.5)
         .setInteractive({ useHandCursor: true });
       const buyBtnText = this.add.text(0, btnY, "Buy", {
-        font: "14px Brothers",
+        font: "14px Inter",
         color: "#fff"
       }).setOrigin(0.5);
 
@@ -409,13 +409,13 @@ export default class GameScene extends Phaser.Scene {
     const arrowY = centerY - 100;
 
     const leftArrowImg = this.add.image(centerX - arrowOffsetX, arrowY, 'down_arrow').setDisplaySize(64, 40).setOrigin(0.5);
-    const leftRateText = this.add.text(centerX - arrowOffsetX, arrowY - 40, '—', { font: "16px Brothers", color: "#000000", align: 'center' }).setOrigin(0.5);
-    const leftInfoText = this.add.text(centerX - arrowOffsetX, arrowY + 40, 'Lower\nOr Same', { font: "16px Brothers", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const leftRateText = this.add.text(centerX - arrowOffsetX, arrowY - 40, '—', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const leftInfoText = this.add.text(centerX - arrowOffsetX, arrowY + 40, 'Lower\nOr Same', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
     this.hiloContainer.add([leftArrowImg, leftRateText, leftInfoText]);
 
     const rightArrowImg = this.add.image(centerX + arrowOffsetX, arrowY, 'up_arrow').setDisplaySize(64, 40).setOrigin(0.5);
-    const rightRateText = this.add.text(centerX + arrowOffsetX, arrowY - 40, '—', { font: "16px Brothers", color: "#000000", align: 'center' }).setOrigin(0.5);
-    const rightInfoText = this.add.text(centerX + arrowOffsetX, arrowY + 40, 'Higher\nOr Same', { font: "16px Brothers", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const rightRateText = this.add.text(centerX + arrowOffsetX, arrowY - 40, '—', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const rightInfoText = this.add.text(centerX + arrowOffsetX, arrowY + 40, 'Higher\nOr Same', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
     this.hiloContainer.add([rightArrowImg, rightRateText, rightInfoText]);
 
     const updateRates = (index) => {
@@ -454,7 +454,7 @@ export default class GameScene extends Phaser.Scene {
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
     const balanceText = this.add.text(betPanelX - 200, betPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
-      font: "20px Brothers", color: '#000000', align: 'left'
+      font: "20px Inter", color: '#000000', align: 'left'
     }).setOrigin(0, 0.5);
     this.hiloContainer.add(balanceText);
 
@@ -468,7 +468,7 @@ export default class GameScene extends Phaser.Scene {
     this.hiloContainer.add(inputBg);
 
     const betInput = this.add.text(betPanelX - 125, betPanelY - 130, currency.format(this.hiloBetAmount), {
-      font: "20px Brothers", color: '#000',
+      font: "20px Inter", color: '#000',
     }).setOrigin(0, 0.5);
     this.hiloContainer.add(betInput);
 
@@ -490,7 +490,7 @@ export default class GameScene extends Phaser.Scene {
         .setDisplaySize(btnWidth, btnHeight)
         .setInteractive({ useHandCursor: true });
 
-      const label = this.add.text(x, btnY, val.toString(), { font: '18px Brothers', color: '#fff' }).setOrigin(0.5);
+      const label = this.add.text(x, btnY, val.toString(), { font: '18px Inter', color: '#fff' }).setOrigin(0.5);
 
       b.on('pointerdown', () => {
         this.selectedStep = val;
@@ -559,7 +559,7 @@ export default class GameScene extends Phaser.Scene {
         .setInteractive({ useHandCursor: true });
 
       const pLabel = p === 0 ? 'Clear' : `${p}%`;
-      const pText = this.add.text(px, quickY, pLabel, { font: '16px Brothers', color: '#fff' }).setOrigin(0.5);
+      const pText = this.add.text(px, quickY, pLabel, { font: '16px Inter', color: '#fff' }).setOrigin(0.5);
 
       pBg.on('pointerdown', () => {
         const availableBalance = parseFloat((this.userBalance + this.hiloBetAmount).toFixed(2));
@@ -590,7 +590,7 @@ export default class GameScene extends Phaser.Scene {
     .setOrigin(0.5)
     .setDisplaySize(425, 45)
     .setInteractive();
-    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "CASHOUT", { font: "20px Brothers", color: '#fff' }).setOrigin(0.5);
+    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "CASHOUT", { font: "20px Inter", color: '#fff' }).setOrigin(0.5);
     this.addPressEffect(cashoutBg, cashoutText);
     this.cashoutEnabled = false;
 
@@ -893,10 +893,10 @@ export default class GameScene extends Phaser.Scene {
     this.coinFlipContainer.add([safeBtn, helpBtn, musicBtn]);
 
     const seriesBox = this.add.image(startX + panelWidth / 2 - 180, startY + 220, 'history_slot').setDisplaySize(120, 120);
-    const seriesText = this.add.text(seriesBox.x, seriesBox.y, "0 \n\nSeries", { font: "18px Brothers", align: 'center', color: "#000" }).setOrigin(0.5);
+    const seriesText = this.add.text(seriesBox.x, seriesBox.y, "0 \n\nSeries", { font: "18px Inter", align: 'center', color: "#000" }).setOrigin(0.5);
 
     const multiplyBox = this.add.image(startX + panelWidth / 2, startY + 220, 'history_slot').setDisplaySize(120, 120);
-    const multiplyText = this.add.text(multiplyBox.x, multiplyBox.y, "x0.00 \n\nMultiplier", { font: "18px Brothers", align: 'center', color: "#000" }).setOrigin(0.5);
+    const multiplyText = this.add.text(multiplyBox.x, multiplyBox.y, "x0.00 \n\nMultiplier", { font: "18px Inter", align: 'center', color: "#000" }).setOrigin(0.5);
 
     this.coinFlipContainer.add([seriesBox, seriesText, multiplyBox, multiplyText]);
 
@@ -1015,7 +1015,7 @@ export default class GameScene extends Phaser.Scene {
     // balance text (shared)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
     const coinBalanceText = this.add.text(coinBetPanelX - 200, coinBetPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
-      font: "20px Brothers", color: '#000000', align: 'left'
+      font: "20px Inter", color: '#000000', align: 'left'
     }).setOrigin(0, 0.5);
     this.coinFlipContainer.add(coinBalanceText);
 
@@ -1028,7 +1028,7 @@ export default class GameScene extends Phaser.Scene {
     const coinInputBg = this.add.rectangle(coinBetPanelX + 5, coinBetPanelY - 130, 280, 40, 0xBBBBBB).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
 
     const coinBetInput = this.add.text(coinBetPanelX - 125, coinBetPanelY - 130, currency.format(this.coinBetAmount), {
-      font: "20px Brothers", color: '#000'
+      font: "20px Inter", color: '#000'
     }).setOrigin(0, 0.5);
     this.coinFlipContainer.add([coinInputBg, coinBetInput]);
 
@@ -1050,7 +1050,7 @@ export default class GameScene extends Phaser.Scene {
         .setDisplaySize(coinBtnWidth, coinBtnHeight)
         .setInteractive({ useHandCursor: true });
 
-      const label = this.add.text(x, coinBtnY, val.toString(), { font: '18px Brothers', color: '#fff' }).setOrigin(0.5);
+      const label = this.add.text(x, coinBtnY, val.toString(), { font: '18px Inter', color: '#fff' }).setOrigin(0.5);
 
       b.on('pointerdown', () => {
         this.coinSelectedStep = val;
@@ -1116,7 +1116,7 @@ export default class GameScene extends Phaser.Scene {
       pBg.setDisplaySize(70, 32);
 
       const pLabel = p === 0 ? "Clear" : `${p}%`;
-      const pText = this.add.text(px, coinQuickY, pLabel, { font: "16px Brothers", color: "#fff" }).setOrigin(0.5);
+      const pText = this.add.text(px, coinQuickY, pLabel, { font: "16px Inter", color: "#fff" }).setOrigin(0.5);
 
       pBg.on('pointerdown', () => {
         const availableBalance = parseFloat((this.userBalance + this.coinBetAmount).toFixed(2));
@@ -1148,7 +1148,7 @@ export default class GameScene extends Phaser.Scene {
     .setOrigin(0.5)
     .setDisplaySize(425, 45)
     .setInteractive();
-    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "CASHOUT", { font: "20px Brothers", color: '#FFF' }).setOrigin(0.5);
+    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "CASHOUT", { font: "20px Inter", color: '#FFF' }).setOrigin(0.5);
     this.addPressEffect(coinCashoutBg, coinCashoutText);
     this.coinCashoutEnabled = false;
 
