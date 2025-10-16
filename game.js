@@ -16,7 +16,7 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image('background', 'images/background.png');
-    this.load.image('panelBg', 'images/panelBg.png');
+    this.load.image('panelBg', 'images/panelBG.png');
     this.load.image('item', 'images/item.png');
 
     const suits = ["diamonds", "clubs", "hearts", "spades"];
