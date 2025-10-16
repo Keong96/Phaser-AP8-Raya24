@@ -4,15 +4,13 @@ export default class HomeScene extends Phaser.Scene {
       this.loading = null;
     }
   
-    preload() {
-      this.load.image('background2', 'images/background2.png');
-      this.load.image('logo', 'images/logo.png');
-      this.load.image('tapToBegin', 'images/tap-to-begin.png');
-      this.load.image('loading', 'images/loading-icon.png');
-      this.load.image('overlay', 'images/overlay.png');
-    }
-  
-    create() {
+  preload() {
+    this.load.image('background2', 'assets/images/background2.png');
+    this.load.image('logo', 'assets/images/logo.png');
+    this.load.image('tapToBegin', 'assets/images/tap-to-begin.png');
+    this.load.image('loading', 'assets/images/loading-icon.png');
+    this.load.image('overlay', 'assets/images/overlay.png');
+  }    create() {
       const centerX = this.cameras.main.width / 2;
       const centerY = this.cameras.main.height / 2;
       
@@ -28,7 +26,7 @@ export default class HomeScene extends Phaser.Scene {
   
       let startGameButton = this.add.image(centerX, centerY, 'tapToBegin').setDisplaySize(1920, 1080).setInteractive();
       startGameButton.on('pointerup', () => {
-        this.scale.startFullscreen();
+        // this.scale.startFullscreen();
         this.loading.setVisible(true);
         overlay.setVisible(true);
         this.startGame();

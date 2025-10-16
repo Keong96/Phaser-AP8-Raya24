@@ -25,8 +25,8 @@ A browser-based casino game collection built with Phaser 3, featuring Hi-Lo card
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Modern web browser with ES6 module support
-- Local web server (for development)
+- [Node.js](https://nodejs.org/) (version 16 or higher)
+- npm (comes with Node.js)
 
 ### Installation
 
@@ -36,37 +36,76 @@ A browser-based casino game collection built with Phaser 3, featuring Hi-Lo card
    cd Phaser-AP8-Raya24
    ```
 
-2. **Start a local server**
+2. **Install dependencies**
    ```bash
-   # Using Node.js (with http-server)
-   npx http-server
+   npm install
    ```
 
-3. **Open in browser**
-   Navigate to `http://localhost:8000`
+3. **Start the development server**
+   ```bash
+   npm run dev
+   ```
+   
+   Or without analytics:
+   ```bash
+   npm run dev-nolog
+   ```
+
+4. **Open in browser**
+   Navigate to `http://localhost:8080`
+
+### Building for Production
+
+To create a production build:
+
+```bash
+npm run build
+```
+
+Or without analytics:
+
+```bash
+npm run build-nolog
+```
+
+The built files will be in the `dist` folder, ready to deploy to any web server.
+
+### Available Commands
+
+| Command | Description |
+|---------|-------------|
+| `npm install` | Install project dependencies |
+| `npm run dev` | Launch development server with analytics |
+| `npm run dev-nolog` | Launch development server without analytics |
+| `npm run build` | Create production build with analytics |
+| `npm run build-nolog` | Create production build without analytics |
+| `npm run preview` | Preview production build locally |
 
 ## 📁 Project Structure
 
 ```
 Phaser-AP8-Raya24/
-├── index.html          # Main HTML entry point
-├── main.js             # Phaser configuration and scene setup
-├── home.js             # Home/splash screen scene
-├── game.js             # Main game scene with all game logic
-├── fonts/              # Custom font files
-│   ├── Brothers-Bold.ttf
-│   └── Inter-Regular.ttf
-├── images/             # Game assets
-│   ├── cards/          # Playing card images (52 cards)
-│   ├── background.png
-│   ├── logo.png
-│   └── [other game assets]
-└── sounds/             # Audio files
-    ├── background_music.mp3
-    ├── click.mp3
-    ├── win.mp3
-    ├── lose.mp3
-    └── ka-ching.mp3
+├── index.html              # Main HTML entry point
+├── package.json            # Node.js dependencies and scripts
+├── vite/                   # Vite configuration files
+│   ├── config.dev.mjs      # Development configuration
+│   └── config.prod.mjs     # Production configuration
+├── log.js                  # Analytics logging (optional)
+├── src/                    # Source files
+│   ├── main.js             # Application entry point
+│   └── game/               # Game modules
+│       ├── main.js         # Phaser configuration
+│       └── scenes/         # Game scenes
+│           ├── HomeScene.js    # Home/splash screen
+│           └── GameScene.js    # Main game logic
+├── public/                 # Static assets (served directly)
+│   ├── style.css           # Global styles
+│   └── assets/             # Game assets
+│       ├── fonts/          # Custom font files
+│       ├── images/         # Game images and sprites
+│       │   └── cards/      # Playing card images (52 cards)
+│       └── sounds/         # Audio files
+└── dist/                   # Production build output (generated)
 ```
 
 ## 🎯 Game Mechanics
@@ -105,10 +144,19 @@ Phaser-AP8-Raya24/
 ## 🎨 Technical Features
 
 ### Frontend Technologies
-- **Phaser 3.55.2**: Game engine for rendering and physics
+- **Phaser 3.90.0**: Latest game engine for rendering and physics
+- **Vite 6.3.1**: Lightning-fast build tool and dev server
 - **Canvas Confetti**: Celebration effects for wins
+- **Axios**: HTTP client for API requests
+- **JWT Decode**: Token handling for authentication
 - **Custom Fonts**: Brothers-Bold and Inter for UI typography
 - **ES6 Modules**: Modern JavaScript module system
+
+### Build System
+- **Hot Module Replacement (HMR)**: Instant updates during development
+- **Code Splitting**: Phaser is bundled separately for optimal caching
+- **Minification**: Terser for production code optimization
+- **Asset Optimization**: Automatic asset handling and optimization
 
 ### Game Architecture
 - **Scene-based**: Separate scenes for home and main game
@@ -146,13 +194,18 @@ The game includes a complete audio experience:
 ## 🔧 Development
 
 ### Code Structure
-- **main.js**: Phaser configuration and scene management
-- **home.js**: Splash screen with loading states
-- **game.js**: Main game logic (1000+ lines)
+- **src/main.js**: Application entry point with font loading
+- **src/game/main.js**: Phaser configuration and scene management
+- **src/game/scenes/HomeScene.js**: Splash screen with loading states
+- **src/game/scenes/GameScene.js**: Main game logic (1000+ lines)
   - Shop system with scrollable grid
   - Hi-Lo game with card mechanics
   - Coin flip game with probability systems
   - Shared UI components and utilities
+
+### Vite Configuration
+- **Development** (`vite/config.dev.mjs`): Fast HMR, no minification
+- **Production** (`vite/config.prod.mjs`): Optimized builds with Terser
 
 ### Key Classes and Methods
 ```javascript
@@ -168,6 +221,12 @@ class GameScene extends Phaser.Scene {
   revealCard()        // Card flip animations
 }
 ```
+
+### Hot Module Replacement
+Vite provides instant feedback during development:
+- Edit scene files and see changes immediately
+- No page refresh needed for most code changes
+- Fast build times (< 1 second for most changes)
 
 ## 🎮 Controls
 

@@ -15,52 +15,52 @@ export default class GameScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.image('background', 'images/background.png');
-    this.load.image('panelBg', 'images/panelBG.png');
-    this.load.image('item', 'images/item.png');
+    this.load.image('background', 'assets/images/background.png');
+    this.load.image('panelBg', 'assets/images/panelBG.png');
+    this.load.image('item', 'assets/images/item.png');
 
     const suits = ["diamonds", "clubs", "hearts", "spades"];
     const ranks = ["ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king"];
     suits.forEach(suit => ranks.forEach(rank => {
-      this.load.image(`${rank}_of_${suit}`, `images/cards/${rank}_of_${suit}.png`);
+      this.load.image(`${rank}_of_${suit}`, `assets/images/cards/${rank}_of_${suit}.png`);
     }));
 
-    this.load.image('portrait', 'images/portrait.png');
-    this.load.image('deposit', 'images/deposit.png');
+    this.load.image('portrait', 'assets/images/portrait.png');
+    this.load.image('deposit', 'assets/images/deposit.png');
 
-    this.load.image('lucky_shop', 'images/lucky_shop.png');
-    this.load.image('hilo_game', 'images/hilo_game.png');
-    this.load.image('coinflip_game', 'images/coinflip_game.png');
+    this.load.image('lucky_shop', 'assets/images/lucky_shop.png');
+    this.load.image('hilo_game', 'assets/images/hilo_game.png');
+    this.load.image('coinflip_game', 'assets/images/coinflip_game.png');
 
-    this.load.image('safe_icon', 'images/safe_icon.png');
-    this.load.image('help_icon', 'images/help_icon.png');
-    this.load.image('music_icon', 'images/music_icon.png');
+    this.load.image('safe_icon', 'assets/images/safe_icon.png');
+    this.load.image('help_icon', 'assets/images/help_icon.png');
+    this.load.image('music_icon', 'assets/images/music_icon.png');
 
-    this.load.image('shadow', 'images/shadow.png');
-    this.load.image('card_back', 'images/card_back.png');
-    this.load.image('up_arrow', 'images/up_arrow.png');
-    this.load.image('down_arrow', 'images/down_arrow.png');
-    this.load.image('bet_higher', 'images/bet_higher.png');
-    this.load.image('bet_lower', 'images/bet_lower.png');
-    this.load.image('bet_head', 'images/bet_head.png');
-    this.load.image('bet_tail', 'images/bet_tail.png');
+    this.load.image('shadow', 'assets/images/shadow.png');
+    this.load.image('card_back', 'assets/images/card_back.png');
+    this.load.image('up_arrow', 'assets/images/up_arrow.png');
+    this.load.image('down_arrow', 'assets/images/down_arrow.png');
+    this.load.image('bet_higher', 'assets/images/bet_higher.png');
+    this.load.image('bet_lower', 'assets/images/bet_lower.png');
+    this.load.image('bet_head', 'assets/images/bet_head.png');
+    this.load.image('bet_tail', 'assets/images/bet_tail.png');
 
-    this.load.image('bet_value_bg', 'images/bet_value_bg.png');
-    this.load.image('minus_button', 'images/minus_button.png');
-    this.load.image('plus_button', 'images/plus_button.png');
-    this.load.image('cashout_button', 'images/cashout_button.png');
+    this.load.image('bet_value_bg', 'assets/images/bet_value_bg.png');
+    this.load.image('minus_button', 'assets/images/minus_button.png');
+    this.load.image('plus_button', 'assets/images/plus_button.png');
+    this.load.image('cashout_button', 'assets/images/cashout_button.png');
 
-    this.load.image('coin_head', 'images/coin_head.png');
-    this.load.image('coin_tail', 'images/coin_tail.png');
+    this.load.image('coin_head', 'assets/images/coin_head.png');
+    this.load.image('coin_tail', 'assets/images/coin_tail.png');
     
-    this.load.image('history_slot', 'images/history_slot.png');
+    this.load.image('history_slot', 'assets/images/history_slot.png');
 
-    this.load.audio('bgm', 'sounds/background_music.mp3');
-    this.load.audio('click', 'sounds/click.mp3');
-    this.load.audio('winSound', 'sounds/win.mp3');
-    this.load.audio('loseSound', 'sounds/lose.mp3');
-    this.load.audio('ka-chingSound', 'sounds/ka-ching.mp3');
-    this.load.image('cashout_button', 'images/cashout_button.png');
+    this.load.audio('bgm', 'assets/sounds/background_music.mp3');
+    this.load.audio('click', 'assets/sounds/click.mp3');
+    this.load.audio('winSound', 'assets/sounds/win.mp3');
+    this.load.audio('loseSound', 'assets/sounds/lose.mp3');
+    this.load.audio('ka-chingSound', 'assets/sounds/ka-ching.mp3');
+    this.load.image('cashout_button', 'assets/images/cashout_button.png');
   }
 
   create() {
@@ -83,18 +83,21 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // background full screen
-    this.add.image(width / 2, height / 2, 'background').setDisplaySize(1920, 1080);
+    this.add.image(width / 2, height / 2, 'background').setDisplaySize(width, height);
 
-    // Content column size (portrait)
-    this.contentWidth = 576;
-    this.contentHeight = 1080;
+    // Content column size (portrait) - scale based on screen height
+    const baseContentWidth = 576;
+    const baseContentHeight = 1080;
+    const heightScale = height / baseContentHeight;
+    this.contentWidth = baseContentWidth;
+    this.contentHeight = height;
 
     // center content column horizontally
     const contentX = Math.round((width - this.contentWidth) / 2);
 
     // nav area starts at right of content
     this.navWidth = Math.max(200, width - (contentX + this.contentWidth));
-    const navX = this.contentWidth + 250;
+    const navX = contentX + this.contentWidth;
 
     // containers (positioned at contentX so children use same local coords)
     this.shopContainer = this.add.container(contentX, 0).setVisible(true);
@@ -140,7 +143,8 @@ export default class GameScene extends Phaser.Scene {
     const panelWidth = this.contentWidth;
     const panelHeight = this.contentHeight;
     const centerY = 80;
-    const startX = this.navWidth / 2;
+    const startX = -100;
+    console.log('navWidth, startX', this.navWidth, startX);
     const spacing = 140;
 
     // portrait
@@ -181,7 +185,7 @@ export default class GameScene extends Phaser.Scene {
     const startY = 140;
 
     buttons.forEach((key, i) => {
-      const cx = Math.round(this.navWidth / 2);
+      const cx = -200;
       const cy = startY + i * spacingY;
 
       const btn = this.add.image(cx, cy, key)
@@ -314,18 +318,18 @@ export default class GameScene extends Phaser.Scene {
   setupHilo() {
     const panelWidth = this.contentWidth;
     const panelHeight = this.contentHeight;
-    const startX = 20;
-    const startY = 20;
+    const startX = 0;
+    const startY = 0;
 
     // panel background
-    const bg = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth - 40, panelHeight - 40);
+    const bg = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth, panelHeight);
     this.hiloContainer.add(bg);
 
     // inner area
     const contentLeft = startX + 20;
     const contentTop = startY + 20;
-    const contentW = panelWidth - 60;
-    const contentH = panelHeight - 80;
+    const contentW = panelWidth;
+    const contentH = panelHeight - 10;
     const centerX = contentLeft + contentW / 2;
     const centerY = contentTop + contentH / 2 - 30;
 
