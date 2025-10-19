@@ -827,177 +827,174 @@ export default class GameScene extends Phaser.Scene {
 
   setupCoinFlip() {
     const panelWidth = this.contentWidth;
-    const panelHeight = this.contentHeight - this.headerHeight;
-    const startX = 20;
-    const startY = 20;
+    const betPanelHeight = 550;
+    const panelHeight = this.contentHeight - this.headerHeight - betPanelHeight;
+    const startX = 0;
+    const startY = 0;
 
-    // panel background
-    const coinPanelBgRect = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth - 40, panelHeight - 40);
+    const coinPanelBgRect = this.add.image(startX, startY, 'panelBg')
+      .setOrigin(0)
+      .setDisplaySize(panelWidth, panelHeight);
     this.coinFlipContainer.add(coinPanelBgRect);
 
-    // inner area
     const coinContentLeft = startX + 20;
     const coinContentTop = startY + 20;
-    const coinContentW = panelWidth - 60;
-    const coinContentH = panelHeight - 80;
+    const coinContentW = panelWidth;
+    const coinContentH = panelHeight;
     const coinCenterX = coinContentLeft + coinContentW / 2;
-    const coinCenterY = coinContentTop + coinContentH / 2 - 40;
+    const coinCenterY = coinContentTop + coinContentH / 2 + 150;
 
-    const settingButtons = this.createSettingButtons(startX + panelWidth / 2 - 250, startY + 120, 40);
+    const settingButtons = this.createSettingButtons(startX + 160, startY + 60);
     this.coinFlipContainer.add(settingButtons);
 
-    const seriesBox = this.add.image(startX + panelWidth / 2 - 180, startY + 220, 'history_slot').setDisplaySize(120, 120);
-    const seriesText = this.add.text(seriesBox.x, seriesBox.y, "0 \n\nSeries", { font: "18px Inter", align: 'center', color: "#000" }).setOrigin(0.5);
+    const infoY = coinContentTop + 200;
+    const infoSpacing = 200;
 
-    const multiplyBox = this.add.image(startX + panelWidth / 2, startY + 220, 'history_slot').setDisplaySize(120, 120);
-    const multiplyText = this.add.text(multiplyBox.x, multiplyBox.y, "x0.00 \n\nMultiplier", { font: "18px Inter", align: 'center', color: "#000" }).setOrigin(0.5);
+    const seriesBox = this.add.image(coinCenterX - infoSpacing, infoY, 'history_slot')
+      .setDisplaySize(150, 150)
+      .setOrigin(0.5);
+    const seriesText = this.add.text(seriesBox.x, seriesBox.y, "0 \n\nSeries", {
+      font: "32px Inter",
+      align: 'center',
+      color: "#000"
+    }).setOrigin(0.5);
+
+    const multiplyBox = this.add.image(coinCenterX + infoSpacing, infoY, 'history_slot')
+      .setDisplaySize(150, 150)
+      .setOrigin(0.5);
+    const multiplyText = this.add.text(multiplyBox.x, multiplyBox.y, "x0.00 \n\nMultiplier", {
+      font: "32px Inter",
+      align: 'center',
+      color: "#000"
+    }).setOrigin(0.5);
 
     this.coinFlipContainer.add([seriesBox, seriesText, multiplyBox, multiplyText]);
 
-    const COIN_SIZE = 160;
+    const COIN_SIZE = 280;
     let coinCurrentSide = Math.random() < 0.5 ? 0 : 1;
     const coinKey = coinCurrentSide === 0 ? 'coin_head' : 'coin_tail';
 
-    const coinImage = this.add.image(coinCenterX, coinCenterY - 75, coinKey)
+    const coinImage = this.add.image(coinCenterX, coinCenterY - 200, coinKey)
       .setOrigin(0.5)
       .setDisplaySize(COIN_SIZE, COIN_SIZE);
     this.coinFlipContainer.add(coinImage);
 
-    const shadow = this.add.image(coinCenterX, coinCenterY + 25, 'shadow')
+    const shadow = this.add.image(coinCenterX, coinCenterY + 100, 'shadow')
       .setOrigin(0.5)
-      .setDisplaySize(172, 30);
+      .setDisplaySize(344, 60);
     this.coinFlipContainer.add(shadow);
 
-    let coinIsFlipping = false;
-    const revealCoin = (finalSide, onComplete = null) => {
-      if (coinIsFlipping) return;
-      coinIsFlipping = true;
+    const coinHistoryContainer = this.add.container(0, panelHeight - 150);
+    this.coinFlipContainer.add(coinHistoryContainer);
 
-      // source frame sizes (texture pixels)
-      const srcW = (coinImage.frame && coinImage.frame.width) ? coinImage.frame.width : COIN_SIZE;
-      const srcH = (coinImage.frame && coinImage.frame.height) ? coinImage.frame.height : COIN_SIZE;
+    const betPanelContainer = this.add.container(0, panelHeight);
+    this.coinFlipContainer.add(betPanelContainer);
 
-      const flipCount = 16;
-      const flipDuration = 20; // ms per half flip
-      const minCropW = Math.max(4, Math.round(srcW * 0.04)); // small safe minimum
-      let currentFlip = 0;
+    const betPanelX = coinContentLeft + coinContentW / 2 - 17;
+    const betPanelY = betPanelHeight / 2 + 200;
 
-      const applyCenteredCrop = (img, cropW) => {
-        const left = Math.floor((srcW - cropW) / 2);
-        img.setCrop(left, 0, cropW, srcH);
-      };
+    const floatingPanelWidth = coinContentW - 200;
+    const floatingPanelHeight = 500;
+    const floatingPanelY = betPanelY - betPanelHeight / 2 + 50;
+    const floatingPanelRadius = 20;
 
-      // ensure display size locked
-      coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+    const shadowLayers = [
+      { offsetY: 5, blur: 6, alpha: 0.03 },
+      { offsetY: 5, blur: 3, alpha: 0.04 },
+      { offsetY: 5, blur: 1.5, alpha: 0.03 }
+    ];
 
-      const expandHalf = () => {
-        const state = { w: minCropW };
-        this.tweens.add({
-          targets: state,
-          w: srcW,
-          duration: flipDuration,
-          ease: 'Linear',
-          onUpdate: () => {
-            const w = Math.round(state.w);
-            applyCenteredCrop(coinImage, w);
-          },
-          onComplete: () => {
-            currentFlip++;
-            if (currentFlip < flipCount) {
-              shrinkHalf();
-            } else {
-              // finalize: show final side, clear crop by setting full crop
-              coinImage.setTexture(finalSide === 0 ? 'coin_head' : 'coin_tail');
-              coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
-              // replace clearCrop() with full setCrop
-              coinImage.setCrop(0, 0, srcW, srcH);
-              coinIsFlipping = false;
-              if (typeof onComplete === 'function') onComplete();
-            }
-          }
-        });
-      };
+    shadowLayers.forEach(layer => {
+      const shadowGraphics = this.add.graphics();
+      shadowGraphics.fillStyle(0x000000, layer.alpha);
+      shadowGraphics.fillRoundedRect(
+        betPanelX - floatingPanelWidth / 2 - layer.blur,
+        floatingPanelY - floatingPanelHeight / 2 + layer.offsetY - layer.blur,
+        floatingPanelWidth + (layer.blur * 2),
+        floatingPanelHeight + (layer.blur * 2),
+        floatingPanelRadius + layer.blur
+      );
+      betPanelContainer.add(shadowGraphics);
+    });
 
-      const shrinkHalf = () => {
-        const state = { w: srcW };
-        this.tweens.add({
-          targets: state,
-          w: minCropW,
-          duration: flipDuration,
-          ease: 'Linear',
-          onUpdate: () => {
-            const w = Math.max(minCropW, Math.round(state.w));
-            applyCenteredCrop(coinImage, w);
-          },
-          onComplete: () => {
-            // swap texture at mid-flip (alternate)
-            const nextShowHead = (currentFlip % 2 === 0);
-            coinImage.setTexture(nextShowHead ? 'coin_tail' : 'coin_head');
-            coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
-            // ensure other image is cropped small before expand
-            applyCenteredCrop(coinImage, minCropW);
-            expandHalf();
-          }
-        });
-      };
+    const floatingPanelGraphics = this.add.graphics();
+    floatingPanelGraphics.fillStyle(0xFFFFFF, 1);
+    floatingPanelGraphics.fillRoundedRect(
+      betPanelX - floatingPanelWidth / 2,
+      floatingPanelY - floatingPanelHeight / 2,
+      floatingPanelWidth,
+      floatingPanelHeight,
+      floatingPanelRadius
+    );
+    floatingPanelGraphics.lineStyle(2, 0xE0E0E0, 1);
+    floatingPanelGraphics.strokeRoundedRect(
+      betPanelX - floatingPanelWidth / 2,
+      floatingPanelY - floatingPanelHeight / 2,
+      floatingPanelWidth,
+      floatingPanelHeight,
+      floatingPanelRadius
+    );
+    betPanelContainer.add(floatingPanelGraphics);
 
-      // init crop to full then start
-      coinImage.setCrop(0, 0, srcW, srcH);
-      shrinkHalf();
-    };
-
-    // --- Bet panel (own panel but uses same this.userBalance) ---
-    const coinBetPanelHeight = 350;
-    const coinBetPanelX = coinContentLeft + coinContentW / 2 - 10;
-    const coinBetPanelY = coinContentTop + coinContentH - coinBetPanelHeight / 2 + 10;
-
-    const coinBetBg = this.add.rectangle(coinBetPanelX, coinBetPanelY, coinContentW, coinBetPanelHeight, 0xFFFFFF, 0.95)
-      .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
-    this.coinFlipContainer.add(coinBetBg);
-
-    const slotSpacing = 100;
+    const slotSpacing = 170;
     this.coinFlipHistorySlot = [];
 
     for (let i = 0; i < 5; i++) {
-      let slot = this.add.image(coinBetPanelX + 3 + (i - 2) * slotSpacing, coinBetPanelY - 240, 'history_slot')
-        .setDisplaySize(64, 64)
+      const slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 440, 'history_slot')
+        .setDisplaySize(150, 150)
         .setOrigin(0.5);
-      this.coinFlipHistorySlot.push(slot)
+      this.coinFlipHistorySlot.push(slot);
     }
-    this.coinFlipContainer.add(this.coinFlipHistorySlot);
 
-    // balance text (shared)
+    coinHistoryContainer.add(this.coinFlipHistorySlot);
+
+    const betBgOffsetY = 100;
+    const betBg = this.add.rectangle(
+      betPanelX,
+      betPanelY - betBgOffsetY,
+      coinContentW,
+      betPanelHeight + betBgOffsetY * 2,
+      0xF2F2F2F2,
+      1
+    )
+      .setOrigin(0.5);
+    betPanelContainer.add(betBg);
+    betPanelContainer.sendToBack(betBg);
+
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const coinBalanceText = this.add.text(coinBetPanelX - 200, coinBetPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
-      font: "20px Inter", color: '#000000', align: 'left'
+    const coinBalanceText = this.add.text(betPanelX - 400, betPanelY - 400, `Balance: ${currency.format(this.userBalance)}`, {
+      font: "35px Inter",
+      color: '#000000',
+      align: 'left'
     }).setOrigin(0, 0.5);
-    this.coinFlipContainer.add(coinBalanceText);
+    betPanelContainer.add(coinBalanceText);
 
-    // expose ref for sync
     this.coinFlip = this.coinFlip || {};
     this.coinFlip.balanceText = coinBalanceText;
 
-    // Fixed bet amount - always 10 tokens per play
     this.coinBetAmount = 10.00;
 
-    // Heads / Tails buttons
-    const coinHeadBtn = this.add.image(coinBetPanelX + coinContentW / 4 - 15, coinBetPanelY + 50, 'bet_head')
-      .setOrigin(0.5).setDisplaySize(180, 85).setInteractive({ useHandCursor: true });
-    const coinTailBtn = this.add.image(coinBetPanelX + coinContentW / 4 - 245, coinBetPanelY + 50, 'bet_tail')
-      .setOrigin(0.5).setDisplaySize(180, 85).setInteractive({ useHandCursor: true });
+    const coinHeadBtn = this.add.image(betPanelX + 200, betPanelY - 200, 'bet_head')
+      .setOrigin(0.5)
+      .setDisplaySize(360, 170)
+      .setInteractive({ useHandCursor: true });
+    const coinTailBtn = this.add.image(betPanelX - 200, betPanelY - 200, 'bet_tail')
+      .setOrigin(0.5)
+      .setDisplaySize(360, 170)
+      .setInteractive({ useHandCursor: true });
 
     this.addPressEffect(coinHeadBtn);
     this.addPressEffect(coinTailBtn);
-    this.coinFlipContainer.add([coinHeadBtn, coinTailBtn]);
+    betPanelContainer.add([coinHeadBtn, coinTailBtn]);
 
-    // prize pool & cashout (coin-specific)
     this.coinPrizePool = 0.00;
-    const coinCashoutBg = this.add.image(coinBetPanelX + coinContentW / 4 - 125, coinBetPanelY - 200, 'cashout_button')
+    const coinCashoutBg = this.add.image(betPanelX, betPanelY - 40, 'cashout_button')
       .setOrigin(0.5)
-      .setDisplaySize(425, 45)
+      .setDisplaySize(425 * 2, 45 * 2)
       .setInteractive();
-    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "CASHOUT", { font: "20px Inter", color: '#FFF' }).setOrigin(0.5);
+    const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "CASHOUT", { font: "40px Inter", color: '#FFF' }).setOrigin(0.5);
     this.addPressEffect(coinCashoutBg, coinCashoutText);
+    betPanelContainer.add([coinCashoutBg, coinCashoutText]);
     this.coinCashoutEnabled = false;
 
     const updateCoinCashout = () => {
@@ -1026,10 +1023,8 @@ export default class GameScene extends Phaser.Scene {
       this.coinPrizePool = 0;
       updateCoinCashout();
 
-      // reset game state
       this.coinGameStarted = false;
 
-      // clear coin history
       this.coinFlipHistorySlot.forEach(slot => {
         if (slot.coinImage) {
           slot.coinImage.destroy();
@@ -1039,17 +1034,84 @@ export default class GameScene extends Phaser.Scene {
     });
 
     updateCoinCashout();
-    this.coinFlipContainer.add([coinCashoutBg, coinCashoutText]);
 
-    // Flip / round logic
+    let coinIsFlipping = false;
+    const revealCoin = (finalSide, onComplete = null) => {
+      if (coinIsFlipping) return;
+      coinIsFlipping = true;
+
+      const srcW = (coinImage.frame && coinImage.frame.width) ? coinImage.frame.width : COIN_SIZE;
+      const srcH = (coinImage.frame && coinImage.frame.height) ? coinImage.frame.height : COIN_SIZE;
+
+      const flipCount = 16;
+      const flipDuration = 20;
+      const minCropW = Math.max(4, Math.round(srcW * 0.04));
+      let currentFlip = 0;
+
+      const applyCenteredCrop = (img, cropW) => {
+        const left = Math.floor((srcW - cropW) / 2);
+        img.setCrop(left, 0, cropW, srcH);
+      };
+
+      coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+
+      const expandHalf = () => {
+        const state = { w: minCropW };
+        this.tweens.add({
+          targets: state,
+          w: srcW,
+          duration: flipDuration,
+          ease: 'Linear',
+          onUpdate: () => {
+            const w = Math.round(state.w);
+            applyCenteredCrop(coinImage, w);
+          },
+          onComplete: () => {
+            currentFlip++;
+            if (currentFlip < flipCount) {
+              shrinkHalf();
+            } else {
+              coinImage.setTexture(finalSide === 0 ? 'coin_head' : 'coin_tail');
+              coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+              coinImage.setCrop(0, 0, srcW, srcH);
+              coinIsFlipping = false;
+              if (typeof onComplete === 'function') onComplete();
+            }
+          }
+        });
+      };
+
+      const shrinkHalf = () => {
+        const state = { w: srcW };
+        this.tweens.add({
+          targets: state,
+          w: minCropW,
+          duration: flipDuration,
+          ease: 'Linear',
+          onUpdate: () => {
+            const w = Math.max(minCropW, Math.round(state.w));
+            applyCenteredCrop(coinImage, w);
+          },
+          onComplete: () => {
+            const nextShowHead = (currentFlip % 2 === 0);
+            coinImage.setTexture(nextShowHead ? 'coin_tail' : 'coin_head');
+            coinImage.setDisplaySize(COIN_SIZE, COIN_SIZE);
+            applyCenteredCrop(coinImage, minCropW);
+            expandHalf();
+          }
+        });
+      };
+
+      coinImage.setCrop(0, 0, srcW, srcH);
+      shrinkHalf();
+    };
+
     this.coinGameStarted = false;
-    const COIN_MULTIPLIER = 1.95; // payout multiplier for correct guess
+    const COIN_MULTIPLIER = 1.95;
 
     const startCoinRound = (choiceIsHeads) => {
-      // Check if user has enough balance
       if (this.userBalance < this.coinBetAmount) return;
 
-      // Deduct bet from balance
       this.setUserBalance(this.userBalance - this.coinBetAmount);
       coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
 
@@ -1057,7 +1119,7 @@ export default class GameScene extends Phaser.Scene {
         this.coinGameStarted = true;
       }
 
-      const result = Math.random() < 0.5 ? 0 : 1; // 0 heads, 1 tails
+      const result = Math.random() < 0.5 ? 0 : 1;
       const userWin = (choiceIsHeads && result === 0) || (!choiceIsHeads && result === 1);
 
       revealCoin(result, () => {
@@ -1075,18 +1137,16 @@ export default class GameScene extends Phaser.Scene {
           this.coinPrizePool = parseFloat((this.coinPrizePool + winAmount).toFixed(2));
           updateCoinCashout();
 
-          // add coin result into first empty slot
           const emptySlot = this.coinFlipHistorySlot.find(s => !s.coinImage);
           if (emptySlot) {
-            const coinKey = result === 0 ? 'coin_head' : 'coin_tail';
-            const coinOnSlot = this.add.image(emptySlot.x, emptySlot.y, coinKey)
-              .setDisplaySize(48, 48)
+            const slotCoinKey = result === 0 ? 'coin_head' : 'coin_tail';
+            const coinOnSlot = this.add.image(emptySlot.x, emptySlot.y, slotCoinKey)
+              .setDisplaySize(64, 64)
               .setOrigin(0.5);
             emptySlot.coinImage = coinOnSlot;
-            this.coinFlipContainer.add(coinOnSlot);
+            coinHistoryContainer.add(coinOnSlot);
           }
 
-          // check if all 5 slots filled
           const filledSlots = this.coinFlipHistorySlot.filter(s => s.coinImage).length;
           if (filledSlots >= 5) {
             this.coinFlipHistorySlot.forEach(slot => {
@@ -1101,7 +1161,6 @@ export default class GameScene extends Phaser.Scene {
           }
 
         } else {
-          // LOSS - bet amount is already deducted, now reset bet to 0
           if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
 
@@ -1121,11 +1180,9 @@ export default class GameScene extends Phaser.Scene {
       });
     };
 
-    // wire up head/tail buttons
     coinHeadBtn.on('pointerdown', () => startCoinRound(true));
     coinTailBtn.on('pointerdown', () => startCoinRound(false));
 
-    // store refs
     this.coinFlip = {
       coinImage,
       coinHeadBtn,
