@@ -1,16 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="/style.css">
-    <title>Raya24 - Phaser Game</title>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+	<meta name="mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-capable" content="yes" />
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+	<title>Casino Slot Game</title>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+		html, body {
+			width: 100%;
+			height: 100%;
+			overflow: hidden;
+			background: linear-gradient(135deg, #1e3c72 0%, #2a5298 50%, #7e22ce 100%);
+		}
+		#app {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			position: relative;
+		}
+		/* Phone frame for desktop */
+		#game-container {
+			position: relative;
+			width: 100%;
+			height: 100%;
+			max-width: 420px;
+			max-height: 100vh;
+			background: #000;
+			border-radius: 0;
+			box-shadow: none;
+			overflow: hidden;
+		}
+		canvas {
+			display: block;
+		}
+
+		/* Mobile - full screen, no frame */
+		@media (max-width: 767px) {
+			#game-container {
+				max-width: 100%;
+				max-height: 100%;
+			}
+		}
+	</style>
 </head>
+
 <body>
-    <div id="app">
-        <div id="phaser-container"></div>
-        <canvas id="confetti"></canvas>
-    </div>
-    <script type="module" src="src/main.js"></script>
+	<div id="app">
+		<div id="game-container"></div>
+		<canvas id="confetti" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999;"></canvas>
+	</div>
+	<script type="module" src="src/main.js"></script>
 </body>
+
 </html>

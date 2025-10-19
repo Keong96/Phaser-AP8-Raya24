@@ -16,7 +16,8 @@ export default class GameScene extends Phaser.Scene {
 
   preload() {
     this.load.image('background', 'assets/images/background.png');
-    this.load.image('panelBg', 'assets/images/panelBG.png');
+    // this.load.image('bg', 'assets/images/bg.webp');
+    this.load.image('panelBg', 'assets/images/bg.webp');
     this.load.image('item', 'assets/images/item.png');
 
     const suits = ["diamonds", "clubs", "hearts", "spades"];
@@ -65,10 +66,15 @@ export default class GameScene extends Phaser.Scene {
 
   create() {
     const confettiCanvas = document.getElementById('confetti');
-    this.myConfetti = confetti.create(confettiCanvas, {
-      resize: true,
-      useWorker: true
-    });
+    if (confettiCanvas instanceof HTMLCanvasElement && window.confetti) {
+      this.myConfetti = window.confetti.create(confettiCanvas, {
+        resize: true,
+        useWorker: true
+      });
+    } else {
+      console.warn('Confetti canvas not found or confetti not loaded');
+      this.myConfetti = null;
+    }
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -83,34 +89,32 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // background full screen
-    this.add.image(width / 2, height / 2, 'background').setDisplaySize(width, height);
+    this.add.image(width / 2, height / 2, 'bg').setDisplaySize(width, height);
 
     // Content column size (portrait) - scale based on screen height
-    const baseContentWidth = 576;
-    const baseContentHeight = 1080;
+    const baseContentWidth = 1080;
+    const baseContentHeight = 1920;
     const heightScale = height / baseContentHeight;
     this.contentWidth = baseContentWidth;
     this.contentHeight = height;
+    this.headerHeight = 140;
 
     // center content column horizontally
     const contentX = Math.round((width - this.contentWidth) / 2);
 
-    // nav area starts at right of content
-    this.navWidth = Math.max(200, width - (contentX + this.contentWidth));
-    const navX = contentX + this.contentWidth;
-
     // containers (positioned at contentX so children use same local coords)
-    this.shopContainer = this.add.container(contentX, 0).setVisible(false);
-    this.hiloContainer = this.add.container(contentX, 0).setVisible(true);
-    this.coinFlipContainer = this.add.container(contentX, 0).setVisible(false);
+    // Start below the header
+    this.shopContainer = this.add.container(contentX, this.headerHeight).setVisible(false);
+    this.hiloContainer = this.add.container(contentX, this.headerHeight).setVisible(true);
+    this.coinFlipContainer = this.add.container(contentX, this.headerHeight).setVisible(false);
 
     // build screens
-    this.setupShop();
+    // this.setupShop();
     this.setupHilo();
     this.setupCoinFlip();
 
-    // right nav (floating circles)
-    this.createRightNav(navX);
+    this.createHeader();
+    this.createGameNavButtons();
   }
 
   addPressEffect(obj, pairedText = null, offset = 5) {
@@ -137,38 +141,80 @@ export default class GameScene extends Phaser.Scene {
     obj.on('pointerout', reset);
   }
 
-  createRightNav(navX) {
-    this.navContainer = this.add.container(navX, 0);
+  createSettingButtons(x, y, size = 80) {
+    const spacing = 100;
+    const buttons = [];
 
+    const safeBtn = this.add.image(x, y, 'safe_icon')
+      .setOrigin(0.5)
+      .setDisplaySize(size, size)
+      .setInteractive({ useHandCursor: true });
+    safeBtn.on('pointerdown', () => {
+      this.handleSafeClick();
+    });
+    this.addPressEffect(safeBtn);
+    buttons.push(safeBtn);
+
+    const helpBtn = this.add.image(x + spacing, y, 'help_icon')
+      .setOrigin(0.5)
+      .setDisplaySize(size, size)
+      .setInteractive({ useHandCursor: true });
+    helpBtn.on('pointerdown', () => {
+      this.showHelpPopup();
+    });
+    this.addPressEffect(helpBtn);
+    buttons.push(helpBtn);
+
+    const musicBtn = this.add.image(x + spacing * 2, y, 'music_icon')
+      .setOrigin(0.5)
+      .setDisplaySize(size, size)
+      .setInteractive({ useHandCursor: true });
+    musicBtn.on('pointerdown', () => {
+      this.toggleMusic();
+    });
+    this.addPressEffect(musicBtn);
+    buttons.push(musicBtn);
+
+    return buttons;
+  }
+
+  createHeader() {
     const panelWidth = this.contentWidth;
-    const panelHeight = this.contentHeight;
-    const centerY = 80;
-    const startX = -100;
-    console.log('navWidth, startX', this.navWidth, startX);
-    const spacing = 140;
+    const headerHeight = 140;
+    
+    // create header container
+    this.headerContainer = this.add.container(0, 0);
+    
+    // white background for header
+    const headerBg = this.add.rectangle(0, 0, this.cameras.main.width, headerHeight, 0xFFFFFF, 1)
+      .setOrigin(0, 0);
+    this.headerContainer.add(headerBg);
+    
+    const startX = (this.cameras.main.width - panelWidth) / 2;
+    const startY = 0;
 
     // portrait
-    const portrait = this.add.image(startX - panelWidth / 2 - spacing + 25, centerY - 15, 'portrait')
-      .setDisplaySize(60, 60)
+    const portrait = this.add.image(startX + 190, startY + 75, 'portrait')
+      .setDisplaySize(120, 120)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true });
 
     // user info (username + token)
-    const usernameText = this.add.text(startX - panelWidth / 2 - 60, centerY - 25, 'Donald Trump', {
-      font: '20px Inter',
-      color: '#B68E62',
+    const usernameText = this.add.text(startX + 290, startY + 55, 'Donald Trump', {
+      font: '40px Inter',
+      color: '#B68B82',
       align: 'left'
     }).setOrigin(0, 0.5);
 
-    this.tokenText = this.add.text(startX - panelWidth / 2 - 60, centerY - 1, 'Token: 12345 coins', {
-      font: '16px Inter',
-      color: '#B68E62',
+    this.tokenText = this.add.text(startX + 290, startY + 100, 'Token: 12345 coins', {
+      font: '32px Inter',
+      color: '#B68B82',
       align: 'left'
     }).setOrigin(0, 0.5);
 
     // deposit button
-    const depositBtn = this.add.image(startX - panelWidth / 2 + spacing + 120, centerY - 15, 'deposit')
-      .setDisplaySize(85, 40)
+    const depositBtn = this.add.image(startX + panelWidth - 200, startY + 70, 'deposit')
+      .setDisplaySize(170, 80)
       .setOrigin(0.5)
       .setInteractive({ useHandCursor: true })
       .on('pointerdown', () => {
@@ -176,19 +222,33 @@ export default class GameScene extends Phaser.Scene {
       });
 
     this.addPressEffect(depositBtn, null, 4);
-    this.navContainer.add([portrait, usernameText, this.tokenText, depositBtn]);
+    this.headerContainer.add([portrait, usernameText, this.tokenText, depositBtn]);
+    
+    // Set header to highest depth so it stays on top
+    this.headerContainer.setDepth(1000);
+  }
 
-    // --- Game Nav Buttons ---
+  createGameNavButtons() {
+    const width = this.cameras.main.width;
+    const panelWidth = this.contentWidth;
+    const startX = this.cameras.main.width;
+    
+    // Create nav container on the right side
+    this.navContainer = this.add.container(0, 0);
+    this.add.existing(this.navContainer);
+
+    // --- Game Nav Buttons (Vertical) ---
     const buttons = ['lucky_shop', 'hilo_game', 'coinflip_game'];
     const containers = [this.shopContainer, this.hiloContainer, this.coinFlipContainer];
-    const spacingY = 75;
-    const startY = 140;
+    const spacingY = 150;
+    const btnX = panelWidth - 190; // Position to the right of content
+    const btnStartY = 220;
 
     buttons.forEach((key, i) => {
-      const cx = -200;
-      const cy = startY + i * spacingY;
+      const cy = btnStartY + i * spacingY;
 
-      const btn = this.add.image(cx, cy, key)
+      const btn = this.add.image(btnX, cy, key)
+        .setDisplaySize(120, 120)
         .setInteractive({ useHandCursor: true })
         .on('pointerdown', () => {
           containers.forEach((c, idx) => c.setVisible(idx === i));
@@ -198,6 +258,9 @@ export default class GameScene extends Phaser.Scene {
       this.addPressEffect(btn, null, 4);
       this.navContainer.add(btn);
     });
+    
+    // Set nav to high depth so it stays visible
+    this.navContainer.setDepth(999);
   }
 
   openDepositModal() {
@@ -205,119 +268,120 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setUserBalance(amount) {
-    const v = parseFloat(Number(amount) || 0);
+    const v = Number(amount) || 0;
     this.userBalance = parseFloat(v.toFixed(2));
     const txt = `Balance: ${currency.format(this.userBalance)}`;
     if (this.hilo && this.hilo.balanceText) this.hilo.balanceText.setText(txt);
     if (this.coinFlip && this.coinFlip.balanceText) this.coinFlip.balanceText.setText(txt);
   }
 
-  setupShop() {
-    const panelWidth = this.contentWidth;
-    const panelHeight = this.contentHeight;
-    const startX = 20;
-    const startY = 20;
+//   setupShop() {
+//     const panelWidth = this.contentWidth;
+//     const panelHeight = this.contentHeight;
+//     const startX = 20;
+//     const startY = 20;
 
-    // background panel (light but slightly visible)
-    const bg = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth - 40, panelHeight - 40);
-    this.shopContainer.add(bg);
+//     // background panel (light but slightly visible)
+//     const bg = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth - 40, panelHeight - 40);
+//     this.shopContainer.add(bg);
 
-    const scrollAreaHeight = panelHeight - 80;
+//     const scrollAreaHeight = panelHeight - 80;
 
-    // Use add.graphics() (must be in display list) for geometry mask
-    const maskGraphics = this.add.graphics();
-    maskGraphics.fillStyle(0xffffff, 1);
-    maskGraphics.fillRect(startX + 10, startY + 10, panelWidth - 60, scrollAreaHeight);
-    // Hide the graphics itself so it doesn't show on screen
-    maskGraphics.setVisible(false);
+//     // Use add.graphics() (must be in display list) for geometry mask
+//     const maskGraphics = this.add.graphics();
+//     maskGraphics.fillStyle(0xffffff, 1);
+//     maskGraphics.fillRect(startX + 10, startY + 10, panelWidth - 60, scrollAreaHeight);
+//     // Hide the graphics itself so it doesn't show on screen
+//     maskGraphics.setVisible(false);
 
-    const mask = maskGraphics.createGeometryMask();
+//     const mask = maskGraphics.createGeometryMask();
 
-    // Scrollable content container (center aligned inside panel area)
-    const content = this.add.container(startX + panelWidth / 2, startY + scrollAreaHeight / 2);
-    content.setMask(mask);
-    this.shopContainer.add(content);
+//     // Scrollable content container (center aligned inside panel area)
+//     const content = this.add.container(startX + panelWidth / 2, startY + scrollAreaHeight / 2);
+//     content.setMask(mask);
+//     this.shopContainer.add(content);
 
-    // Grid setup
-    const cols = 3;
-    const rows = 3;
-    const itemSize = 150;
-    const spacing = 30;
+//     // Grid setup
+//     const cols = 3;
+//     const rows = 3;
+//     const itemSize = 150;
+//     const spacing = 30;
 
-    for (let i = 0; i < cols * rows; i++) {
-      const col = i % cols;
-      const row = Math.floor(i / cols);
+//     for (let i = 0; i < cols * rows; i++) {
+//       const col = i % cols;
+//       const row = Math.floor(i / cols);
 
-      const x = (col - (cols - 1) / 2) * (itemSize + spacing);
-      const y = (row - (rows - 1) / 2) * (itemSize + spacing);
+//       const x = (col - (cols - 1) / 2) * (itemSize + spacing);
+//       const y = (row - (rows - 1) / 2) * (itemSize + spacing);
 
-      const itemContainer = this.add.container(x, y);
+//       const itemContainer = this.add.container(x, y);
 
-      // Card-like background for each item (higher contrast)
-      const box = this.add.rectangle(0, 0, itemSize, itemSize, 0xf2f2f2)
-        .setOrigin(0.5)
-        .setStrokeStyle(2, 0x222222);
-      itemContainer.add(box);
+//       // Card-like background for each item (higher contrast)
+//       const box = this.add.rectangle(0, 0, itemSize, itemSize, 0xf2f2f2)
+//         .setOrigin(0.5)
+//         .setStrokeStyle(2, 0x222222);
+//       itemContainer.add(box);
 
-      // Item image (use single key 'item' for fallback)
-      const imgKey = `item${i + 1}`;
-      const img = this.textures.exists(imgKey) ? this.add.image(0, -20, imgKey) : this.add.image(0, -20, 'item');
-      img.setDisplaySize(80, 80).setOrigin(0.5);
-      itemContainer.add(img);
+//       // Item image (use single key 'item' for fallback)
+//       const imgKey = `item${i + 1}`;
+//       const img = this.textures.exists(imgKey) ? this.add.image(0, -20, imgKey) : this.add.image(0, -20, 'item');
+//       img.setDisplaySize(80, 80).setOrigin(0.5);
+//       itemContainer.add(img);
 
-      // Item name
-      const name = this.add.text(0, 30, `Item ${i + 1}`, {
-        font: "16px Inter",
-        color: "#111111",
-        align: "center"
-      }).setOrigin(0.5);
-      itemContainer.add(name);
+//       // Item name
+//       const name = this.add.text(0, 30, `Item ${i + 1}`, {
+//         font: "16px Inter",
+//         color: "#111111",
+//         align: "center"
+//       }).setOrigin(0.5);
+//       itemContainer.add(name);
 
-      // Price
-      const price = this.add.text(0, 50, `$${(i + 1) * 10}`, {
-        font: "14px Inter",
-        color: "#008800"
-      }).setOrigin(0.5);
-      itemContainer.add(price);
+//       // Price
+//       const price = this.add.text(0, 50, `$${(i + 1) * 10}`, {
+//         font: "14px Inter",
+//         color: "#008800"
+//       }).setOrigin(0.5);
+//       itemContainer.add(price);
 
-      // Buy button
-      const btnHeight = 32;
-      const paddingBottom = 5;
-      const btnY = itemSize / 2 - (btnHeight / 2) - paddingBottom;
-      const buyBtnBg = this.add.rectangle(0, btnY, itemSize - 12, btnHeight, 0x4444aa)
-        .setOrigin(0.5)
-        .setInteractive({ useHandCursor: true });
-      const buyBtnText = this.add.text(0, btnY, "Buy", {
-        font: "14px Inter",
-        color: "#fff"
-      }).setOrigin(0.5);
+//       // Buy button
+//       const btnHeight = 32;
+//       const paddingBottom = 5;
+//       const btnY = itemSize / 2 - (btnHeight / 2) - paddingBottom;
+//       const buyBtnBg = this.add.rectangle(0, btnY, itemSize - 12, btnHeight, 0x4444aa)
+//         .setOrigin(0.5)
+//         .setInteractive({ useHandCursor: true });
+//       const buyBtnText = this.add.text(0, btnY, "Buy", {
+//         font: "14px Inter",
+//         color: "#fff"
+//       }).setOrigin(0.5);
 
-      buyBtnBg.on("pointerdown", () => {
-        console.log(`Purchased Item ${i + 1}`);
-        // hook purchase logic here
-      });
+//       buyBtnBg.on("pointerdown", () => {
+//         console.log(`Purchased Item ${i + 1}`);
+//         // hook purchase logic here
+//       });
 
-      itemContainer.add(buyBtnBg);
-      itemContainer.add(buyBtnText);
+//       itemContainer.add(buyBtnBg);
+//       itemContainer.add(buyBtnText);
 
-      content.add(itemContainer);
-    }
+//       content.add(itemContainer);
+//     }
 
-    // Scroll with mouse wheel (only when shopContainer visible)
-    this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
-      if (!this.shopContainer.visible) return;
-      content.y -= deltaY * 0.5;
-      // clamp scroll so content won't scroll infinitely (optional)
-      const maxScroll = (itemSize + spacing) * (rows / 2);
-      const minY = startY + scrollAreaHeight / 2 - maxScroll;
-      const maxY = startY + scrollAreaHeight / 2 + maxScroll;
-      content.y = Phaser.Math.Clamp(content.y, minY, maxY);
-    });
-  }
+//     // Scroll with mouse wheel (only when shopContainer visible)
+//     this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
+//       if (!this.shopContainer.visible) return;
+//       content.y -= deltaY * 0.5;
+//       // clamp scroll so content won't scroll infinitely (optional)
+//       const maxScroll = (itemSize + spacing) * (rows / 2);
+//       const minY = startY + scrollAreaHeight / 2 - maxScroll;
+//       const maxY = startY + scrollAreaHeight / 2 + maxScroll;
+//       content.y = Phaser.Math.Clamp(content.y, minY, maxY);
+//     });
+//   }
 
   setupHilo() {
     const panelWidth = this.contentWidth;
-    const panelHeight = this.contentHeight;
+    const betPanelHeight = 600;
+    const panelHeight = this.contentHeight - this.headerHeight - betPanelHeight;
     const startX = 0;
     const startY = 0;
 
@@ -329,38 +393,12 @@ export default class GameScene extends Phaser.Scene {
     const contentLeft = startX + 20;
     const contentTop = startY + 20;
     const contentW = panelWidth;
-    const contentH = panelHeight - 10;
+    const contentH = panelHeight;
     const centerX = contentLeft + contentW / 2;
-    const centerY = contentTop + contentH / 2 - 30;
+    const centerY = contentTop + contentH / 2 + 150;
 
-    const safeBtn = this.add.image(startX + panelWidth / 2 - 250, startY + 120, 'safe_icon')
-      .setOrigin(0.5)
-      .setDisplaySize(40, 40)
-      .setInteractive();
-    safeBtn.on('pointerdown', () => {
-      this.handleSafeClick();
-    });
-    this.addPressEffect(safeBtn);
-
-    const helpBtn = this.add.image(startX + panelWidth / 2 - 195, startY + 120, 'help_icon')
-      .setOrigin(0.5)
-      .setDisplaySize(40, 40)
-      .setInteractive();
-    helpBtn.on('pointerdown', () => {
-      this.showHelpPopup();
-    });
-    this.addPressEffect(helpBtn);
-
-    const musicBtn = this.add.image(startX + panelWidth / 2 - 140, startY + 120, 'music_icon')
-      .setOrigin(0.5)
-      .setDisplaySize(40, 40)
-      .setInteractive();
-    musicBtn.on('pointerdown', () => {
-      this.toggleMusic();
-    });
-    this.addPressEffect(musicBtn);
-
-    this.hiloContainer.add([safeBtn, helpBtn, musicBtn]);
+    const settingButtons = this.createSettingButtons(startX + 160, startY + 60);
+    this.hiloContainer.add(settingButtons);
 
     // helper for card keys
     const suits = ["diamonds", "clubs", "hearts", "spades"];
@@ -397,29 +435,29 @@ export default class GameScene extends Phaser.Scene {
     this.hiloContainer.add(card);
 
     // force card display size (keep ratio)
-    const CARD_W = 160, CARD_H = 240;
+    const CARD_W = 144 * 2, CARD_H = 191 * 2;
     const tex = this.textures.get(cardKey);
     const baseWidth = (tex && tex.source && tex.source[0]) ? tex.source[0].width : card.width || CARD_W;
     const baseHeight = (tex && tex.source && tex.source[0]) ? tex.source[0].height : card.height || CARD_H;
     card.setScale(CARD_W / baseWidth, CARD_H / baseHeight);
 
-    const shadow = this.add.image(centerX, centerY - 50, 'shadow')
+    const shadow = this.add.image(centerX, centerY + 100, 'shadow')
     .setOrigin(0.5)
-    .setDisplaySize(172, 30);
+    .setDisplaySize(344, 60);
     this.hiloContainer.add(shadow);
 
     // arrows + rate texts
-    const arrowOffsetX = Math.min(220, contentW * 0.32);
-    const arrowY = centerY - 100;
+    const arrowOffsetX = Math.min(280, contentW * 0.5);
+    const arrowY = centerY - 180;
 
-    const leftArrowImg = this.add.image(centerX - arrowOffsetX, arrowY, 'down_arrow').setDisplaySize(64, 40).setOrigin(0.5);
-    const leftRateText = this.add.text(centerX - arrowOffsetX, arrowY - 40, '—', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
-    const leftInfoText = this.add.text(centerX - arrowOffsetX, arrowY + 40, 'Lower\nOr Same', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const leftArrowImg = this.add.image(centerX - arrowOffsetX, arrowY, 'down_arrow').setDisplaySize(128, 80).setOrigin(0.5);
+    const leftRateText = this.add.text(centerX - arrowOffsetX, arrowY - 80, '—', { font: "35px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const leftInfoText = this.add.text(centerX - arrowOffsetX, arrowY + 90, 'Lower\nOr Same', { font: "35px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
     this.hiloContainer.add([leftArrowImg, leftRateText, leftInfoText]);
 
-    const rightArrowImg = this.add.image(centerX + arrowOffsetX, arrowY, 'up_arrow').setDisplaySize(64, 40).setOrigin(0.5);
-    const rightRateText = this.add.text(centerX + arrowOffsetX, arrowY - 40, '—', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
-    const rightInfoText = this.add.text(centerX + arrowOffsetX, arrowY + 40, 'Higher\nOr Same', { font: "16px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const rightArrowImg = this.add.image(centerX + arrowOffsetX, arrowY, 'up_arrow').setDisplaySize(128, 80).setOrigin(0.5);
+    const rightRateText = this.add.text(centerX + arrowOffsetX, arrowY - 80, '—', { font: "35px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
+    const rightInfoText = this.add.text(centerX + arrowOffsetX, arrowY + 90, 'Higher\nOr Same', { font: "35px Inter", color: "#000000", align: 'center' }).setOrigin(0.5);
     this.hiloContainer.add([rightArrowImg, rightRateText, rightInfoText]);
 
     const updateRates = (index) => {
@@ -435,149 +473,42 @@ export default class GameScene extends Phaser.Scene {
     updateRates(currentIndex);
 
     // === Bet panel ===
-    const betPanelHeight = 400;
+    // Create betPanel container at the bottom
+    const betPanelContainer = this.add.container(0, panelHeight);
+    this.hiloContainer.add(betPanelContainer);
+    
     const betPanelX = contentLeft + contentW / 2 - 10;
-    const betPanelY = contentTop + contentH - betPanelHeight / 2 + 10;
+    const betPanelY = betPanelHeight / 2;
 
-    const slotSpacing = 100;
+    const slotSpacing = 170;
     this.hiloHistorySlot = [];
 
     for (let i = 0; i < 5; i++) {
-      let slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 240,'history_slot')
-      .setDisplaySize(64, 64)
+      let slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 440, 'history_slot')
+      .setDisplaySize(150, 150)
       .setOrigin(0.5);
       this.hiloHistorySlot.push(slot);
     }
 
-    this.hiloContainer.add(this.hiloHistorySlot);
+    betPanelContainer.add(this.hiloHistorySlot);
 
     const betBg = this.add.rectangle(betPanelX, betPanelY, contentW, betPanelHeight, 0xFFFFFF, 0.95)
       .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
-    this.hiloContainer.add(betBg);
+    betPanelContainer.add(betBg);
 
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const balanceText = this.add.text(betPanelX - 200, betPanelY - 170, `Balance: ${currency.format(this.userBalance)}`, {
-      font: "20px Inter", color: '#000000', align: 'left'
+    const balanceText = this.add.text(betPanelX - 400, betPanelY - 265, `Balance: ${currency.format(this.userBalance)}`, {
+      font: "35px Inter", color: '#000000', align: 'left'
     }).setOrigin(0, 0.5);
-    this.hiloContainer.add(balanceText);
+    betPanelContainer.add(balanceText);
 
     // expose ref for sync
     this.hilo = this.hilo || {};
     this.hilo.balanceText = balanceText;
 
-    // bet input box (display only)
-    this.hiloBetAmount = 0.00;
-    const inputBg = this.add.rectangle(betPanelX + 5, betPanelY - 130, 280, 40, 0xBBBBBB).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
-    this.hiloContainer.add(inputBg);
-
-    const betInput = this.add.text(betPanelX - 125, betPanelY - 130, currency.format(this.hiloBetAmount), {
-      font: "20px Inter", color: '#000',
-    }).setOrigin(0, 0.5);
-    this.hiloContainer.add(betInput);
-
-    // toggle group (step values)
-    const betValues = [1, 5, 10, 50, 100];
-    this.selectedStep = 1;
-
-    const btnWidth = 70, btnHeight = 36, spacing = 15;
-    const totalWidth = betValues.length * btnWidth + (betValues.length - 1) * spacing;
-    const startBtnX = betPanelX - totalWidth / 2 + 40;
-    const btnY = betPanelY - 75;
-    this.hiloBetButtons = [];
-
-    betValues.forEach((val, idx) => {
-      const x = startBtnX + idx * (btnWidth + spacing);
-
-      const b = this.add.image(x, btnY, 'bet_value_bg')
-        .setOrigin(0.5)
-        .setDisplaySize(btnWidth, btnHeight)
-        .setInteractive({ useHandCursor: true });
-
-      const label = this.add.text(x, btnY, val.toString(), { font: '18px Inter', color: '#fff' }).setOrigin(0.5);
-
-      b.on('pointerdown', () => {
-        this.selectedStep = val;
-        this.hiloBetButtons.forEach(btn => btn.bg.clearTint());
-        b.setTint(0x8a6b52);
-      });
-
-      this.addPressEffect(b, label);
-      this.hiloContainer.add([b, label]);
-      this.hiloBetButtons.push({ bg: b, label, val });
-    });
-
-    // highlight first button
-    if (this.hiloBetButtons[0]) this.hiloBetButtons[0].bg.setTint(0x8a6b52);
-
-    // plus / minus logic (reserve funds immediately)
-    const minusBg = this.add.image(betPanelX - 175, betPanelY - 130, 'minus_button')
-    .setOrigin(0.5)
-    .setDisplaySize(50, 40)
-    .setInteractive();
-
-    minusBg.on('pointerdown', () => {
-      const step = this.selectedStep;
-      if (this.hiloBetAmount >= step) {
-        this.hiloBetAmount = parseFloat((this.hiloBetAmount - step).toFixed(2));
-        this.userBalance = parseFloat((this.userBalance + step).toFixed(2));
-      } else {
-        this.userBalance = parseFloat((this.userBalance + this.hiloBetAmount).toFixed(2));
-        this.hiloBetAmount = 0;
-      }
-      betInput.setText(currency.format(this.hiloBetAmount));
-      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-    });
-    this.addPressEffect(minusBg);
-
-    const plusBg = this.add.image(betPanelX + 185, betPanelY - 130, 'plus_button')
-    .setOrigin(0.5)
-    .setDisplaySize(50, 40)
-    .setInteractive();
-
-    plusBg.on('pointerdown', () => {
-      const step = this.selectedStep;
-      if (this.userBalance >= step) {
-        this.hiloBetAmount = parseFloat((this.hiloBetAmount + step).toFixed(2));
-        this.setUserBalance(this.userBalance - step);
-      }
-      betInput.setText(currency.format(this.hiloBetAmount));
-      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-    });
-    this.addPressEffect(plusBg);
-
-    this.hiloContainer.add([minusBg, plusBg]);
-
-    // percent buttons (use availableBalance = userBalance + currentBet)
-    const percents = [0, 25, 50, 75, 100];
-    const quickStartX = betPanelX - totalWidth / 2 + 40;
-    const quickY = betPanelY - 30;
-    this.hiloPercentButtons = [];
-
-    percents.forEach((p, idx) => {
-      const px = quickStartX + idx * 85;
-
-      const pBg = this.add.image(px, quickY, 'bet_value_bg')
-        .setOrigin(0.5)
-        .setDisplaySize(70, 32)
-        .setInteractive({ useHandCursor: true });
-
-      const pLabel = p === 0 ? 'Clear' : `${p}%`;
-      const pText = this.add.text(px, quickY, pLabel, { font: '16px Inter', color: '#fff' }).setOrigin(0.5);
-
-      pBg.on('pointerdown', () => {
-        const availableBalance = parseFloat((this.userBalance + this.hiloBetAmount).toFixed(2));
-        const newBet = p === 0 ? 0 : parseFloat((availableBalance * (p / 100)).toFixed(2));
-        this.hiloBetAmount = newBet;
-        this.userBalance = parseFloat((availableBalance - newBet).toFixed(2));
-        betInput.setText(currency.format(this.hiloBetAmount));
-        balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-      });
-
-      this.addPressEffect(pBg, pText);
-      this.hiloContainer.add([pBg, pText]);
-      this.hiloPercentButtons.push(pBg);
-    });
+    // Fixed bet amount - always 10 tokens per play
+    this.hiloBetAmount = 10.00;
 
     // Higher / Lower buttons - create BEFORE revealCard (revealCard uses these refs)
     const upBtnImg = this.add.image(betPanelX + contentW / 4 - 15, betPanelY + 50, 'bet_higher')
@@ -641,19 +572,10 @@ export default class GameScene extends Phaser.Scene {
 
       // reset game state
       this.hiloGameStarted = false;
-
-      this.hiloBetButtons.forEach(b => {
-        b.bg.setInteractive({ useHandCursor: true })[b.val === this.selectedStep ? 'setTint' : 'clearTint'](0x8a6b52);
-        b.label.setColor('#ffffff');
-      });
-      plusBg.setInteractive({ useHandCursor: true }).clearTint();
-      minusBg.setInteractive({ useHandCursor: true }).clearTint();
-      this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
-      betInput.setColor('#ffffff');
     });
 
     this.updateCashoutButton();
-    this.hiloContainer.add([upBtnImg, downBtnImg, cashoutBg, cashoutText]);
+    betPanelContainer.add([upBtnImg, downBtnImg, cashoutBg, cashoutText]);
 
     // revealCard: uses up/down btn refs, disables them while flipping
     this.isFlipping = false;
@@ -735,15 +657,14 @@ export default class GameScene extends Phaser.Scene {
 
     this.hiloGameStarted = false;
     const startRound = (isHigher) => {
-      if (this.hiloBetAmount <= 0) return;
+      // Check if user has enough balance
+      if (this.userBalance < this.hiloBetAmount) return;
+
+      // Deduct bet from balance
+      this.setUserBalance(this.userBalance - this.hiloBetAmount);
+      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
 
       if (!this.hiloGameStarted) {
-        this.hiloBetButtons.forEach(b => { b.bg.disableInteractive().setTint(0x333333); b.label.setColor('#888888'); });
-        plusBg.disableInteractive().setTint(0x333333);
-        minusBg.disableInteractive().setTint(0x333333);
-        this.hiloPercentButtons.forEach(pBg => pBg.disableInteractive().setTint(0x333333));
-        betInput.setColor('#888888');
-
         this.hiloGameStarted = true;
       }
 
@@ -783,7 +704,7 @@ export default class GameScene extends Phaser.Scene {
               .setDisplaySize(48, 48)
               .setOrigin(0.5);
             emptySlot.cardImage = cardOnSlot;
-            this.hiloContainer.add(cardOnSlot);
+            betPanelContainer.add(cardOnSlot);
           }
 
           // check if all 5 slots filled
@@ -801,7 +722,7 @@ export default class GameScene extends Phaser.Scene {
             this.hiloGameStarted = false;
           }
         } else {
-          // LOSS
+          // LOSS - bet amount is already deducted, now reset bet to 0
           if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
 
@@ -816,15 +737,6 @@ export default class GameScene extends Phaser.Scene {
           this.prizePool = 0;
           this.updateCashoutButton();
           this.hiloGameStarted = false;
-
-          this.hiloBetButtons.forEach(b => {
-            b.bg.setInteractive({ useHandCursor: true })[b.val === this.selectedStep ? 'setTint' : 'clearTint'](0x8a6b52);
-            b.label.setColor('#ffffff');
-          });
-          plusBg.setInteractive({ useHandCursor: true }).clearTint();
-          minusBg.setInteractive({ useHandCursor: true }).clearTint();
-          this.hiloPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
-          betInput.setColor('#000');
         }
 
         balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
@@ -840,18 +752,18 @@ export default class GameScene extends Phaser.Scene {
       card,
       leftRateText,
       rightRateText,
-      betInput,
       upBtnImg,
       downBtnImg,
       leftArrowImg,
       rightArrowImg,
-      currentIndex
+      currentIndex,
+      balanceText
     };
   }
 
   setupCoinFlip() {
     const panelWidth = this.contentWidth;
-    const panelHeight = this.contentHeight;
+    const panelHeight = this.contentHeight - this.headerHeight;
     const startX = 20;
     const startY = 20;
 
@@ -867,34 +779,8 @@ export default class GameScene extends Phaser.Scene {
     const coinCenterX = coinContentLeft + coinContentW / 2;
     const coinCenterY = coinContentTop + coinContentH / 2 - 40;
 
-    const safeBtn = this.add.image(startX + panelWidth / 2 - 250, startY + 120, 'safe_icon')
-      .setOrigin(0.5)
-      .setDisplaySize(40, 40)
-      .setInteractive();
-    safeBtn.on('pointerdown', () => {
-      this.handleSafeClick();
-    });
-    this.addPressEffect(safeBtn);
-
-    const helpBtn = this.add.image(startX + panelWidth / 2 - 195, startY + 120, 'help_icon')
-      .setOrigin(0.5)
-      .setDisplaySize(40, 40)
-      .setInteractive();
-    helpBtn.on('pointerdown', () => {
-      this.showHelpPopup();
-    });
-    this.addPressEffect(helpBtn);
-
-    const musicBtn = this.add.image(startX + panelWidth / 2 - 140, startY + 120, 'music_icon')
-      .setOrigin(0.5)
-      .setDisplaySize(40, 40)
-      .setInteractive();
-    musicBtn.on('pointerdown', () => {
-      this.toggleMusic();
-    });
-    this.addPressEffect(musicBtn);
-
-    this.coinFlipContainer.add([safeBtn, helpBtn, musicBtn]);
+    const settingButtons = this.createSettingButtons(startX + panelWidth / 2 - 250, startY + 120, 40);
+    this.coinFlipContainer.add(settingButtons);
 
     const seriesBox = this.add.image(startX + panelWidth / 2 - 180, startY + 220, 'history_slot').setDisplaySize(120, 120);
     const seriesText = this.add.text(seriesBox.x, seriesBox.y, "0 \n\nSeries", { font: "18px Inter", align: 'center', color: "#000" }).setOrigin(0.5);
@@ -1027,114 +913,8 @@ export default class GameScene extends Phaser.Scene {
     this.coinFlip = this.coinFlip || {};
     this.coinFlip.balanceText = coinBalanceText;
 
-    // bet input (display only)
-    this.coinBetAmount = 0.00;
-    const coinInputBg = this.add.rectangle(coinBetPanelX + 5, coinBetPanelY - 130, 280, 40, 0xBBBBBB).setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
-
-    const coinBetInput = this.add.text(coinBetPanelX - 125, coinBetPanelY - 130, currency.format(this.coinBetAmount), {
-      font: "20px Inter", color: '#000'
-    }).setOrigin(0, 0.5);
-    this.coinFlipContainer.add([coinInputBg, coinBetInput]);
-
-    // step toggle
-    const coinBetValues = [1, 5, 10, 50, 100];
-    this.coinSelectedStep = 1;
-
-    const coinBtnWidth = 70, coinBtnHeight = 36, coinSpacing = 15;
-    const coinTotalWidth = coinBetValues.length * coinBtnWidth + (coinBetValues.length - 1) * coinSpacing;
-    const coinStartBtnX = coinBetPanelX - coinTotalWidth / 2 + 40;
-    const coinBtnY = coinBetPanelY - 75;
-    this.coinBetButtons = [];
-
-    coinBetValues.forEach((val, idx) => {
-      const x = coinStartBtnX + idx * (coinBtnWidth + coinSpacing);
-
-      const b = this.add.image(x, coinBtnY, 'bet_value_bg')
-        .setOrigin(0.5)
-        .setDisplaySize(coinBtnWidth, coinBtnHeight)
-        .setInteractive({ useHandCursor: true });
-
-      const label = this.add.text(x, coinBtnY, val.toString(), { font: '18px Inter', color: '#fff' }).setOrigin(0.5);
-
-      b.on('pointerdown', () => {
-        this.coinSelectedStep = val;
-        this.coinBetButtons.forEach(btn => btn.bg.clearTint());
-        b.setTint(0x8a6b52);
-      });
-
-      this.addPressEffect(b, label);
-      this.coinFlipContainer.add([b, label]);
-      this.coinBetButtons.push({ bg: b, label, val });
-    });
-
-    // highlight first button
-    if (this.coinBetButtons[0]) this.coinBetButtons[0].bg.setTint(0x8a6b52);
-
-    // plus / minus (reserve when increasing)
-    const coinMinusBg = this.add.image(coinBetPanelX - 175, coinBetPanelY - 130, 'minus_button')
-    .setOrigin(0.5)
-    .setDisplaySize(50, 40)
-    .setInteractive();
-
-    coinMinusBg.on('pointerdown', () => {
-      const step = this.coinSelectedStep;
-      if (this.coinBetAmount >= step) {
-        this.coinBetAmount = parseFloat((this.coinBetAmount - step).toFixed(2));
-        this.userBalance = parseFloat((this.userBalance + step).toFixed(2));
-      } else {
-        this.userBalance = parseFloat((this.userBalance + this.coinBetAmount).toFixed(2));
-        this.coinBetAmount = 0;
-      }
-      coinBetInput.setText(currency.format(this.coinBetAmount));
-      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-    });
-    this.addPressEffect(coinMinusBg);
-
-    const coinPlusBg = this.add.image(coinBetPanelX + 185, coinBetPanelY - 130, 'plus_button')
-    .setOrigin(0.5)
-    .setDisplaySize(50, 40)
-    .setInteractive();
-
-    coinPlusBg.on('pointerdown', () => {
-      const step = this.coinSelectedStep;
-      if (this.userBalance >= step) {
-        this.coinBetAmount = parseFloat((this.coinBetAmount + step).toFixed(2));
-        this.setUserBalance(this.userBalance - step);
-      }
-      coinBetInput.setText(currency.format(this.coinBetAmount));
-      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-    });
-    this.addPressEffect(coinPlusBg);
-
-    this.coinFlipContainer.add([coinMinusBg, coinPlusBg]);
-
-    // percent quick buttons
-    const coinPercents = [0, 25, 50, 75, 100];
-    const coinQuickStartX = coinBetPanelX - coinTotalWidth / 2 + 40;
-    const coinQuickY = coinBetPanelY - 30;
-    this.coinPercentButtons = [];
-
-    coinPercents.forEach((p, idx) => {
-      const px = coinQuickStartX + idx * 85;
-      const pBg = this.add.image(px, coinQuickY, 'bet_value_bg').setOrigin(0.5).setInteractive({ useHandCursor: true });
-      pBg.setDisplaySize(70, 32);
-
-      const pLabel = p === 0 ? "Clear" : `${p}%`;
-      const pText = this.add.text(px, coinQuickY, pLabel, { font: "16px Inter", color: "#fff" }).setOrigin(0.5);
-
-      pBg.on('pointerdown', () => {
-        const availableBalance = parseFloat((this.userBalance + this.coinBetAmount).toFixed(2));
-        const newBet = p === 0 ? 0 : parseFloat((availableBalance * (p / 100)).toFixed(2));
-        this.coinBetAmount = newBet;
-        this.userBalance = parseFloat((availableBalance - newBet).toFixed(2));
-        coinBetInput.setText(currency.format(this.coinBetAmount));
-        coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
-      });
-
-      this.addPressEffect(pBg, pText);
-      this.coinFlipContainer.add([pBg, pText]);
-      this.coinPercentButtons.push(pBg);
-    });
+    // Fixed bet amount - always 10 tokens per play
+    this.coinBetAmount = 10.00;
 
     // Heads / Tails buttons
     const coinHeadBtn = this.add.image(coinBetPanelX + coinContentW / 4 - 15, coinBetPanelY + 50, 'bet_head')
@@ -1184,11 +964,6 @@ export default class GameScene extends Phaser.Scene {
 
       // reset game state
       this.coinGameStarted = false;
-      this.coinBetButtons.forEach(b => {b.bg.setInteractive({ useHandCursor: true }).clearTint(); b.label.setColor('#fff');});
-      coinPlusBg.setInteractive({ useHandCursor: true }).clearTint();
-      coinMinusBg.setInteractive({ useHandCursor: true }).clearTint();
-      this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
-      coinBetInput.setColor('#000');
 
       // clear coin history
       this.coinFlipHistorySlot.forEach(slot => {
@@ -1207,17 +982,15 @@ export default class GameScene extends Phaser.Scene {
     const COIN_MULTIPLIER = 1.95; // payout multiplier for correct guess
 
     const startCoinRound = (choiceIsHeads) => {
-      if (this.coinBetAmount <= 0) return;
+      // Check if user has enough balance
+      if (this.userBalance < this.coinBetAmount) return;
+
+      // Deduct bet from balance
+      this.setUserBalance(this.userBalance - this.coinBetAmount);
+      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
 
       if (!this.coinGameStarted) {
-        // lock UI
         this.coinGameStarted = true;
-
-        this.coinBetButtons.forEach(b => { b.bg.disableInteractive().setTint(0x333333); b.label.setColor('#888888'); });
-        coinPlusBg.disableInteractive().setTint(0x333333);
-        coinMinusBg.disableInteractive().setTint(0x333333);
-        this.coinPercentButtons.forEach(pBg => pBg.disableInteractive().setTint(0x333333));
-        coinBetInput.setColor('#888888');
       }
 
       const result = Math.random() < 0.5 ? 0 : 1; // 0 heads, 1 tails
@@ -1264,7 +1037,7 @@ export default class GameScene extends Phaser.Scene {
           }
 
         } else {
-          // LOSS
+          // LOSS - bet amount is already deducted, now reset bet to 0
           if (!this.sound.locked) this.sound.play('loseSound', { volume: 1 });
           else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('loseSound', { volume: 1 }));
 
@@ -1278,16 +1051,6 @@ export default class GameScene extends Phaser.Scene {
           this.coinPrizePool = 0;
           updateCoinCashout();
           this.coinGameStarted = false;
-
-          // unlock UI
-          this.coinBetButtons.forEach(b => {
-            b.bg.setInteractive({ useHandCursor: true })[b.val === this.coinSelectedStep ? 'setTint' : 'clearTint'](0x8a6b52);
-            b.label.setColor('#ffffff');
-          });
-          coinPlusBg.setInteractive({ useHandCursor: true }).clearTint();
-          coinMinusBg.setInteractive({ useHandCursor: true }).clearTint();
-          this.coinPercentButtons.forEach(pBg => pBg.setInteractive({ useHandCursor: true }).clearTint());
-          coinBetInput.setColor('#ffffff');
         }
 
         coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
@@ -1301,7 +1064,6 @@ export default class GameScene extends Phaser.Scene {
     // store refs
     this.coinFlip = {
       coinImage,
-      coinBetInput,
       coinHeadBtn,
       coinTailBtn,
       coinBalanceText,

@@ -1,29 +1,19 @@
 {
-    "name": "phaser-ap8-raya24",
-    "description": "A Phaser 3 game using Vite.",
-    "version": "1.0.0",
-    "type": "module",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/botahead/Phaser-AP8-Raya24.git"
-    },
-    "author": "Raya24",
-    "license": "MIT",
-    "scripts": {
-        "dev": "node log.js dev & vite --config vite/config.dev.mjs",
-        "build": "node log.js build & vite build --config vite/config.prod.mjs",
-        "dev-nolog": "vite --config vite/config.dev.mjs",
-        "build-nolog": "vite build --config vite/config.prod.mjs",
-        "preview": "vite preview"
-    },
-    "devDependencies": {
-        "terser": "^5.39.0",
-        "vite": "^6.3.1"
-    },
-    "dependencies": {
-        "axios": "^1.7.7",
-        "canvas-confetti": "^1.9.3",
-        "jwt-decode": "^4.0.0",
-        "phaser": "^3.90.0"
-    }
+	"name": "phaser3-vite-template",
+	"private": true,
+	"version": "0.0.0",
+	"type": "module",
+	"scripts": {
+		"start": "vite",
+		"build": "vite build",
+		"preview": "vite preview"
+	},
+	"devDependencies": {
+		"eslint": "^9.38.0",
+		"vite": "^3.1.0"
+	},
+	"dependencies": {
+		"canvas-confetti": "^1.9.3",
+		"phaser": "^3.90.0"
+	}
 }
