@@ -53,7 +53,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.load.image('coin_head', 'assets/images/coin_head.png');
     this.load.image('coin_tail', 'assets/images/coin_tail.png');
-    
+
     this.load.image('history_slot', 'assets/images/history_slot.png');
 
     // Sound effects
@@ -183,15 +183,15 @@ export default class GameScene extends Phaser.Scene {
   createHeader() {
     const panelWidth = this.contentWidth;
     const headerHeight = 140;
-    
+
     // create header container
     this.headerContainer = this.add.container(0, 0);
-    
+
     // white background for header
     const headerBg = this.add.rectangle(0, 0, this.cameras.main.width, headerHeight, 0xFFFFFF, 1)
       .setOrigin(0, 0);
     this.headerContainer.add(headerBg);
-    
+
     const startX = (this.cameras.main.width - panelWidth) / 2;
     const startY = 0;
 
@@ -225,7 +225,7 @@ export default class GameScene extends Phaser.Scene {
 
     this.addPressEffect(depositBtn, null, 4);
     this.headerContainer.add([portrait, usernameText, this.tokenText, depositBtn]);
-    
+
     // Set header to highest depth so it stays on top
     this.headerContainer.setDepth(1000);
   }
@@ -234,7 +234,7 @@ export default class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const panelWidth = this.contentWidth;
     const startX = this.cameras.main.width;
-    
+
     // Create nav container on the right side
     this.navContainer = this.add.container(0, 0);
     this.add.existing(this.navContainer);
@@ -260,13 +260,13 @@ export default class GameScene extends Phaser.Scene {
       this.addPressEffect(btn, null, 4);
       this.navContainer.add(btn);
     });
-    
+
     // Set nav to high depth so it stays visible
     this.navContainer.setDepth(999);
   }
 
   openDepositModal() {
-    
+
   }
 
   setUserBalance(amount) {
@@ -277,112 +277,112 @@ export default class GameScene extends Phaser.Scene {
     if (this.coinFlip && this.coinFlip.balanceText) this.coinFlip.balanceText.setText(txt);
   }
 
-//   setupShop() {
-//     const panelWidth = this.contentWidth;
-//     const panelHeight = this.contentHeight;
-//     const startX = 20;
-//     const startY = 20;
+  //   setupShop() {
+  //     const panelWidth = this.contentWidth;
+  //     const panelHeight = this.contentHeight;
+  //     const startX = 20;
+  //     const startY = 20;
 
-//     // background panel (light but slightly visible)
-//     const bg = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth - 40, panelHeight - 40);
-//     this.shopContainer.add(bg);
+  //     // background panel (light but slightly visible)
+  //     const bg = this.add.image(startX, startY, 'panelBg').setOrigin(0).setDisplaySize(panelWidth - 40, panelHeight - 40);
+  //     this.shopContainer.add(bg);
 
-//     const scrollAreaHeight = panelHeight - 80;
+  //     const scrollAreaHeight = panelHeight - 80;
 
-//     // Use add.graphics() (must be in display list) for geometry mask
-//     const maskGraphics = this.add.graphics();
-//     maskGraphics.fillStyle(0xffffff, 1);
-//     maskGraphics.fillRect(startX + 10, startY + 10, panelWidth - 60, scrollAreaHeight);
-//     // Hide the graphics itself so it doesn't show on screen
-//     maskGraphics.setVisible(false);
+  //     // Use add.graphics() (must be in display list) for geometry mask
+  //     const maskGraphics = this.add.graphics();
+  //     maskGraphics.fillStyle(0xffffff, 1);
+  //     maskGraphics.fillRect(startX + 10, startY + 10, panelWidth - 60, scrollAreaHeight);
+  //     // Hide the graphics itself so it doesn't show on screen
+  //     maskGraphics.setVisible(false);
 
-//     const mask = maskGraphics.createGeometryMask();
+  //     const mask = maskGraphics.createGeometryMask();
 
-//     // Scrollable content container (center aligned inside panel area)
-//     const content = this.add.container(startX + panelWidth / 2, startY + scrollAreaHeight / 2);
-//     content.setMask(mask);
-//     this.shopContainer.add(content);
+  //     // Scrollable content container (center aligned inside panel area)
+  //     const content = this.add.container(startX + panelWidth / 2, startY + scrollAreaHeight / 2);
+  //     content.setMask(mask);
+  //     this.shopContainer.add(content);
 
-//     // Grid setup
-//     const cols = 3;
-//     const rows = 3;
-//     const itemSize = 150;
-//     const spacing = 30;
+  //     // Grid setup
+  //     const cols = 3;
+  //     const rows = 3;
+  //     const itemSize = 150;
+  //     const spacing = 30;
 
-//     for (let i = 0; i < cols * rows; i++) {
-//       const col = i % cols;
-//       const row = Math.floor(i / cols);
+  //     for (let i = 0; i < cols * rows; i++) {
+  //       const col = i % cols;
+  //       const row = Math.floor(i / cols);
 
-//       const x = (col - (cols - 1) / 2) * (itemSize + spacing);
-//       const y = (row - (rows - 1) / 2) * (itemSize + spacing);
+  //       const x = (col - (cols - 1) / 2) * (itemSize + spacing);
+  //       const y = (row - (rows - 1) / 2) * (itemSize + spacing);
 
-//       const itemContainer = this.add.container(x, y);
+  //       const itemContainer = this.add.container(x, y);
 
-//       // Card-like background for each item (higher contrast)
-//       const box = this.add.rectangle(0, 0, itemSize, itemSize, 0xf2f2f2)
-//         .setOrigin(0.5)
-//         .setStrokeStyle(2, 0x222222);
-//       itemContainer.add(box);
+  //       // Card-like background for each item (higher contrast)
+  //       const box = this.add.rectangle(0, 0, itemSize, itemSize, 0xf2f2f2)
+  //         .setOrigin(0.5)
+  //         .setStrokeStyle(2, 0x222222);
+  //       itemContainer.add(box);
 
-//       // Item image (use single key 'item' for fallback)
-//       const imgKey = `item${i + 1}`;
-//       const img = this.textures.exists(imgKey) ? this.add.image(0, -20, imgKey) : this.add.image(0, -20, 'item');
-//       img.setDisplaySize(80, 80).setOrigin(0.5);
-//       itemContainer.add(img);
+  //       // Item image (use single key 'item' for fallback)
+  //       const imgKey = `item${i + 1}`;
+  //       const img = this.textures.exists(imgKey) ? this.add.image(0, -20, imgKey) : this.add.image(0, -20, 'item');
+  //       img.setDisplaySize(80, 80).setOrigin(0.5);
+  //       itemContainer.add(img);
 
-//       // Item name
-//       const name = this.add.text(0, 30, `Item ${i + 1}`, {
-//         font: "16px Inter",
-//         color: "#111111",
-//         align: "center"
-//       }).setOrigin(0.5);
-//       itemContainer.add(name);
+  //       // Item name
+  //       const name = this.add.text(0, 30, `Item ${i + 1}`, {
+  //         font: "16px Inter",
+  //         color: "#111111",
+  //         align: "center"
+  //       }).setOrigin(0.5);
+  //       itemContainer.add(name);
 
-//       // Price
-//       const price = this.add.text(0, 50, `$${(i + 1) * 10}`, {
-//         font: "14px Inter",
-//         color: "#008800"
-//       }).setOrigin(0.5);
-//       itemContainer.add(price);
+  //       // Price
+  //       const price = this.add.text(0, 50, `$${(i + 1) * 10}`, {
+  //         font: "14px Inter",
+  //         color: "#008800"
+  //       }).setOrigin(0.5);
+  //       itemContainer.add(price);
 
-//       // Buy button
-//       const btnHeight = 32;
-//       const paddingBottom = 5;
-//       const btnY = itemSize / 2 - (btnHeight / 2) - paddingBottom;
-//       const buyBtnBg = this.add.rectangle(0, btnY, itemSize - 12, btnHeight, 0x4444aa)
-//         .setOrigin(0.5)
-//         .setInteractive({ useHandCursor: true });
-//       const buyBtnText = this.add.text(0, btnY, "Buy", {
-//         font: "14px Inter",
-//         color: "#fff"
-//       }).setOrigin(0.5);
+  //       // Buy button
+  //       const btnHeight = 32;
+  //       const paddingBottom = 5;
+  //       const btnY = itemSize / 2 - (btnHeight / 2) - paddingBottom;
+  //       const buyBtnBg = this.add.rectangle(0, btnY, itemSize - 12, btnHeight, 0x4444aa)
+  //         .setOrigin(0.5)
+  //         .setInteractive({ useHandCursor: true });
+  //       const buyBtnText = this.add.text(0, btnY, "Buy", {
+  //         font: "14px Inter",
+  //         color: "#fff"
+  //       }).setOrigin(0.5);
 
-//       buyBtnBg.on("pointerdown", () => {
-//         console.log(`Purchased Item ${i + 1}`);
-//         // hook purchase logic here
-//       });
+  //       buyBtnBg.on("pointerdown", () => {
+  //         console.log(`Purchased Item ${i + 1}`);
+  //         // hook purchase logic here
+  //       });
 
-//       itemContainer.add(buyBtnBg);
-//       itemContainer.add(buyBtnText);
+  //       itemContainer.add(buyBtnBg);
+  //       itemContainer.add(buyBtnText);
 
-//       content.add(itemContainer);
-//     }
+  //       content.add(itemContainer);
+  //     }
 
-//     // Scroll with mouse wheel (only when shopContainer visible)
-//     this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
-//       if (!this.shopContainer.visible) return;
-//       content.y -= deltaY * 0.5;
-//       // clamp scroll so content won't scroll infinitely (optional)
-//       const maxScroll = (itemSize + spacing) * (rows / 2);
-//       const minY = startY + scrollAreaHeight / 2 - maxScroll;
-//       const maxY = startY + scrollAreaHeight / 2 + maxScroll;
-//       content.y = Phaser.Math.Clamp(content.y, minY, maxY);
-//     });
-//   }
+  //     // Scroll with mouse wheel (only when shopContainer visible)
+  //     this.input.on("wheel", (pointer, gameObjects, deltaX, deltaY) => {
+  //       if (!this.shopContainer.visible) return;
+  //       content.y -= deltaY * 0.5;
+  //       // clamp scroll so content won't scroll infinitely (optional)
+  //       const maxScroll = (itemSize + spacing) * (rows / 2);
+  //       const minY = startY + scrollAreaHeight / 2 - maxScroll;
+  //       const maxY = startY + scrollAreaHeight / 2 + maxScroll;
+  //       content.y = Phaser.Math.Clamp(content.y, minY, maxY);
+  //     });
+  //   }
 
   setupHilo() {
     const panelWidth = this.contentWidth;
-    const betPanelHeight = 600;
+    const betPanelHeight = 550;
     const panelHeight = this.contentHeight - this.headerHeight - betPanelHeight;
     const startX = 0;
     const startY = 0;
@@ -444,8 +444,8 @@ export default class GameScene extends Phaser.Scene {
     card.setScale(CARD_W / baseWidth, CARD_H / baseHeight);
 
     const shadow = this.add.image(centerX, centerY + 100, 'shadow')
-    .setOrigin(0.5)
-    .setDisplaySize(344, 60);
+      .setOrigin(0.5)
+      .setDisplaySize(344, 60);
     this.hiloContainer.add(shadow);
 
     // arrows + rate texts
@@ -474,33 +474,95 @@ export default class GameScene extends Phaser.Scene {
     };
     updateRates(currentIndex);
 
-    // === Bet panel ===
-    // Create betPanel container at the bottom
+    // History panel
+    const historyContainer = this.add.container(0, panelHeight - 150);
+    this.hiloContainer.add(historyContainer);
+
+    // Bet panel
     const betPanelContainer = this.add.container(0, panelHeight);
     this.hiloContainer.add(betPanelContainer);
-    
-    const betPanelX = contentLeft + contentW / 2 - 10;
-    const betPanelY = betPanelHeight / 2;
+
+
+    const betPanelX = contentLeft + contentW / 2 - 17;
+    const betPanelY = betPanelHeight / 2 + 200;
+
+    // === Floating Panel on top of bet panel ===
+    const floatingPanelWidth = contentW - 200;
+    const floatingPanelHeight = 500;
+    const floatingPanelY = betPanelY - betPanelHeight / 2 + 50;
+    const floatingPanelRadius = 20;
+
+    // Create shadow
+    const shadowLayers = [
+      { offsetY: 5, blur: 6, alpha: 0.03 },
+      { offsetY: 5, blur: 3, alpha: 0.04 },
+      { offsetY: 5, blur: 1.5, alpha: 0.03 }
+    ];
+
+    shadowLayers.forEach(layer => {
+      const shadowGraphics = this.add.graphics();
+      shadowGraphics.fillStyle(0x000000, layer.alpha);
+      shadowGraphics.fillRoundedRect(
+        betPanelX - floatingPanelWidth / 2 - layer.blur,
+        floatingPanelY - floatingPanelHeight / 2 + layer.offsetY - layer.blur,
+        floatingPanelWidth + (layer.blur * 2),
+        floatingPanelHeight + (layer.blur * 2),
+        floatingPanelRadius + layer.blur
+      );
+      betPanelContainer.add(shadowGraphics);
+    });
+
+    // Create white floating panel with rounded corners
+    const floatingPanelGraphics = this.add.graphics();
+    floatingPanelGraphics.fillStyle(0xFFFFFF, 1);
+    floatingPanelGraphics.fillRoundedRect(
+      betPanelX - floatingPanelWidth / 2,
+      floatingPanelY - floatingPanelHeight / 2,
+      floatingPanelWidth,
+      floatingPanelHeight,
+      floatingPanelRadius
+    );
+
+    // Add subtle border
+    floatingPanelGraphics.lineStyle(2, 0xE0E0E0, 1);
+    floatingPanelGraphics.strokeRoundedRect(
+      betPanelX - floatingPanelWidth / 2,
+      floatingPanelY - floatingPanelHeight / 2,
+      floatingPanelWidth,
+      floatingPanelHeight,
+      floatingPanelRadius
+    );
+
+    betPanelContainer.add(floatingPanelGraphics);
 
     const slotSpacing = 170;
     this.hiloHistorySlot = [];
 
     for (let i = 0; i < 5; i++) {
       let slot = this.add.image(betPanelX + 3 + (i - 2) * slotSpacing, betPanelY - 440, 'history_slot')
-      .setDisplaySize(150, 150)
-      .setOrigin(0.5);
+        .setDisplaySize(150, 150)
+        .setOrigin(0.5);
       this.hiloHistorySlot.push(slot);
     }
 
-    betPanelContainer.add(this.hiloHistorySlot);
+    historyContainer.add(this.hiloHistorySlot);
 
-    const betBg = this.add.rectangle(betPanelX, betPanelY, contentW, betPanelHeight, 0xFFFFFF, 0.95)
-      .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+    const betBgOffsetY = 100;
+    const betBg = this.add.rectangle(
+      betPanelX,
+      betPanelY - betBgOffsetY,
+      contentW,
+      betPanelHeight + betBgOffsetY * 2,
+      0xF2F2F2F2,
+      1
+    )
+      .setOrigin(0.5);
     betPanelContainer.add(betBg);
+    betPanelContainer.sendToBack(betBg);
 
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const balanceText = this.add.text(betPanelX - 400, betPanelY - 265, `Balance: ${currency.format(this.userBalance)}`, {
+    const balanceText = this.add.text(betPanelX - 400, betPanelY - 400, `Balance: ${currency.format(this.userBalance)}`, {
       font: "35px Inter", color: '#000000', align: 'left'
     }).setOrigin(0, 0.5);
     betPanelContainer.add(balanceText);
@@ -512,22 +574,22 @@ export default class GameScene extends Phaser.Scene {
     // Fixed bet amount - always 10 tokens per play
     this.hiloBetAmount = 10.00;
 
-    // Higher / Lower buttons - create BEFORE revealCard (revealCard uses these refs)
-    const upBtnImg = this.add.image(betPanelX + contentW / 4 - 15, betPanelY + 50, 'bet_higher')
-      .setOrigin(0.5).setDisplaySize(180, 85).setInteractive({ useHandCursor: true });
+    // Higher / Lower buttons
+    const upBtnImg = this.add.image(betPanelX + 200, betPanelY - 200, 'bet_higher')
+      .setOrigin(0.5).setDisplaySize(360, 170).setInteractive({ useHandCursor: true });
     this.addPressEffect(upBtnImg);
 
-    const downBtnImg = this.add.image(betPanelX + contentW / 4 - 245, betPanelY + 50, 'bet_lower')
-      .setOrigin(0.5).setDisplaySize(180, 85).setInteractive({ useHandCursor: true });
+    const downBtnImg = this.add.image(betPanelX - 200, betPanelY - 200, 'bet_lower')
+      .setOrigin(0.5).setDisplaySize(360, 170).setInteractive({ useHandCursor: true });
     this.addPressEffect(downBtnImg);
 
     // prize pool & cashout
     this.prizePool = 0.00;
-    const cashoutBg = this.add.image(betPanelX + contentW / 4 - 125, betPanelY + 135, 'cashout_button')
-    .setOrigin(0.5)
-    .setDisplaySize(425, 45)
-    .setInteractive();
-    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "CASHOUT", { font: "20px Inter", color: '#fff' }).setOrigin(0.5);
+    const cashoutBg = this.add.image(betPanelX, betPanelY - 40, 'cashout_button')
+      .setOrigin(0.5)
+      .setDisplaySize(425 * 2, 45 * 2)
+      .setInteractive();
+    const cashoutText = this.add.text(cashoutBg.x, cashoutBg.y, "CASHOUT", { font: "40px Inter", color: '#fff' }).setOrigin(0.5);
     this.addPressEffect(cashoutBg, cashoutText);
     this.cashoutEnabled = false;
 
@@ -706,7 +768,7 @@ export default class GameScene extends Phaser.Scene {
               .setDisplaySize(48, 48)
               .setOrigin(0.5);
             emptySlot.cardImage = cardOnSlot;
-            betPanelContainer.add(cardOnSlot);
+            historyContainer.add(cardOnSlot);
           }
 
           // check if all 5 slots filled
@@ -800,10 +862,10 @@ export default class GameScene extends Phaser.Scene {
       .setOrigin(0.5)
       .setDisplaySize(COIN_SIZE, COIN_SIZE);
     this.coinFlipContainer.add(coinImage);
-    
+
     const shadow = this.add.image(coinCenterX, coinCenterY + 25, 'shadow')
-    .setOrigin(0.5)
-    .setDisplaySize(172, 30);
+      .setOrigin(0.5)
+      .setDisplaySize(172, 30);
     this.coinFlipContainer.add(shadow);
 
     let coinIsFlipping = false;
@@ -885,12 +947,12 @@ export default class GameScene extends Phaser.Scene {
     };
 
     // --- Bet panel (own panel but uses same this.userBalance) ---
-    const coinBetPanelHeight = 400;
+    const coinBetPanelHeight = 350;
     const coinBetPanelX = coinContentLeft + coinContentW / 2 - 10;
     const coinBetPanelY = coinContentTop + coinContentH - coinBetPanelHeight / 2 + 10;
 
     const coinBetBg = this.add.rectangle(coinBetPanelX, coinBetPanelY, coinContentW, coinBetPanelHeight, 0xFFFFFF, 0.95)
-    .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+      .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
     this.coinFlipContainer.add(coinBetBg);
 
     const slotSpacing = 100;
@@ -898,8 +960,8 @@ export default class GameScene extends Phaser.Scene {
 
     for (let i = 0; i < 5; i++) {
       let slot = this.add.image(coinBetPanelX + 3 + (i - 2) * slotSpacing, coinBetPanelY - 240, 'history_slot')
-      .setDisplaySize(64, 64)
-      .setOrigin(0.5);
+        .setDisplaySize(64, 64)
+        .setOrigin(0.5);
       this.coinFlipHistorySlot.push(slot)
     }
     this.coinFlipContainer.add(this.coinFlipHistorySlot);
@@ -930,10 +992,10 @@ export default class GameScene extends Phaser.Scene {
 
     // prize pool & cashout (coin-specific)
     this.coinPrizePool = 0.00;
-    const coinCashoutBg = this.add.image(coinBetPanelX + coinContentW / 4 - 125, coinBetPanelY + 135, 'cashout_button')
-    .setOrigin(0.5)
-    .setDisplaySize(425, 45)
-    .setInteractive();
+    const coinCashoutBg = this.add.image(coinBetPanelX + coinContentW / 4 - 125, coinBetPanelY - 200, 'cashout_button')
+      .setOrigin(0.5)
+      .setDisplaySize(425, 45)
+      .setInteractive();
     const coinCashoutText = this.add.text(coinCashoutBg.x, coinCashoutBg.y, "CASHOUT", { font: "20px Inter", color: '#FFF' }).setOrigin(0.5);
     this.addPressEffect(coinCashoutBg, coinCashoutText);
     this.coinCashoutEnabled = false;
