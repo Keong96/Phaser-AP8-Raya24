@@ -56,6 +56,7 @@ export default class GameScene extends Phaser.Scene {
     
     this.load.image('history_slot', 'assets/images/history_slot.png');
 
+    // Sound effects
     this.load.audio('bgm', 'assets/sounds/background_music.mp3');
     this.load.audio('click', 'assets/sounds/click.mp3');
     this.load.audio('winSound', 'assets/sounds/win.mp3');
@@ -82,6 +83,7 @@ export default class GameScene extends Phaser.Scene {
     // play bgm safely
     this.sound.unlock();
     this.bgm = this.sound.add('bgm', { loop: true });
+    this.musicOn = true;
     if (!this.sound.locked) {
       this.bgm.play();
     } else {
@@ -1081,6 +1083,13 @@ export default class GameScene extends Phaser.Scene {
   }
 
   toggleMusic() {
-
+    this.musicOn = !this.musicOn;
+    if (this.musicOn) {
+      this.bgm.resume();
+      this.sound.mute = false;
+    } else {
+      this.bgm.pause();
+      this.sound.mute = true;
+    }
   }
 }
