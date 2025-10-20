@@ -845,7 +845,7 @@ export default class GameScene extends Phaser.Scene {
           const emptySlot = this.hiloHistorySlot.find(s => !s.cardImage);
           if (emptySlot) {
             const cardOnSlot = this.add.image(emptySlot.x, emptySlot.y, indexToKey(currentIndex))
-              .setDisplaySize(96, 96)
+              .setDisplaySize(76, 98)
               .setOrigin(0.5);
             emptySlot.cardImage = cardOnSlot;
             betPanelContainer.add(cardOnSlot);
@@ -1205,7 +1205,7 @@ export default class GameScene extends Phaser.Scene {
               .setDisplaySize(96, 96)
               .setOrigin(0.5);
             emptySlot.coinImage = coinOnSlot;
-            this.coinFlipContainer.add(coinOnSlot);
+            betPanelContainer.add(coinOnSlot);
           }
 
           // check if all 5 slots filled
