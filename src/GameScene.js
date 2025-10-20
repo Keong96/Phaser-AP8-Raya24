@@ -229,16 +229,32 @@ export default class GameScene extends Phaser.Scene {
 
     // user info (username + token)
     const usernameText = this.add.text(startX + 290, startY + 55, 'Donald Trump', {
-      font: '40px Inter',
+      font: 'bold 40px Inter',
       color: '#B68B82',
       align: 'left'
     }).setOrigin(0, 0.5);
 
-    this.tokenText = this.add.text(startX + 290, startY + 100, 'Token: 12345 coins', {
-      font: '32px Inter',
+    // token info
+    const tokenLabel = this.add.text(startX + 290, startY + 100, 'Token:', {
+      font: '400 32px Inter',
+      color: '#000000',
+      align: 'left'
+    }).setOrigin(0, 0.5);
+
+    const tokenAmount = this.add.text(tokenLabel.x + tokenLabel.width + 10, startY + 100, '12345', {
+      font: 'bold 32px Inter',
       color: '#B68B82',
       align: 'left'
     }).setOrigin(0, 0.5);
+
+    const tokenUnit = this.add.text(tokenAmount.x + tokenAmount.width + 8, startY + 100, 'coins', {
+      font: '400 32px Inter',
+      color: '#B68B82',
+      align: 'left'
+    }).setOrigin(0, 0.5);
+
+    this.tokenText = tokenAmount;
+    this.headerContainer.add([tokenLabel, tokenAmount, tokenUnit]);
 
     // deposit button
     const depositBtn = this.add.image(startX + panelWidth - 200, startY + 70, 'deposit')
@@ -571,10 +587,27 @@ export default class GameScene extends Phaser.Scene {
 
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const balanceText = this.add.text(betPanelX - 400, betPanelY - 200, `Balance: ${currency.format(this.userBalance)} coins`, {
-      font: "48px Inter", color: '#000000', align: 'left'
+
+    const balanceLabel = this.add.text(betPanelX - 400, betPanelY - 200, "Balance:", {
+      font: "bold 36px Inter",
+      color: "#000000",
+      align: "left"
     }).setOrigin(0, 0.5);
-    betPanelContainer.add(balanceText);
+
+    const balanceAmount = this.add.text(balanceLabel.x + balanceLabel.width + 12, betPanelY - 200, `${currency.format(this.userBalance)} coins`, {
+      font: "bold 36px Inter",
+      color: "#B68E62",
+      align: "left"
+    }).setOrigin(0, 0.5);
+
+    betPanelContainer.add([balanceLabel, balanceAmount]);
+
+    // For updating both together
+    const balanceText = {
+      setText: (amount) => {
+        balanceAmount.setText(`${currency.format(amount)} coins`);
+      }
+    };
 
     const infoIcon = this.add.image(betPanelX + 375, betPanelY - 200, 'info_icon')
       .setOrigin(0.5).setDisplaySize(48, 48).setInteractive({ useHandCursor: true });
@@ -601,7 +634,7 @@ export default class GameScene extends Phaser.Scene {
     betPanelContainer.add(infoTextIcon);
 
     const infoText = this.add.text(betPanelX - 164, betPanelY + 225, `Betting 1 time with 10 coins.`, {
-      font: "24px Inter", color: '#636363', align: 'left'
+      font: "400 28px Inter", color: '#636363', align: 'left'
     }).setOrigin(0, 0.5);
     betPanelContainer.add(infoText);
 

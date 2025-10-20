@@ -83,6 +83,18 @@ const wireLoadingEvents = () => {
 	)
 }
 
+const ensureInterFont = async () => {
+	if (typeof document === 'undefined' || !document?.fonts?.load) return
+	try {
+		await Promise.all([
+			document.fonts.load('16px "Inter"'),
+			document.fonts.ready,
+		])
+	} catch (error) {
+		console.warn('Inter font failed to preload', error)
+	}
+}
+
 setLoadingProgress(0, { force: true })
 wireLoadingEvents()
 
@@ -101,6 +113,9 @@ const bootstrap = async () => {
 
 	setLoadingMessage('Setting the stage…')
 	setLoadingProgress(0.15)
+	await ensureInterFont()
+	setLoadingMessage('Bringing in the Inter vibe…')
+	setLoadingProgress(0.18)
 
 	// expose frequently used libraries to the game globals
 	window.Phaser = Phaser
