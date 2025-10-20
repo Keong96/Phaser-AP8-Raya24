@@ -35,9 +35,8 @@ export default class GameScene extends Phaser.Scene {
 
     const ext = this.supportsWebP() ? 'webp' : 'png'
     this.load.image('background', 'assets/images/background.png');
-    // this.load.image('bg', 'assets/images/bg.webp');
-  const panelBgPath = ext === 'webp' ? 'assets/images/bg.webp' : 'assets/images/background2.png';
-  this.load.image('panelBg', panelBgPath);
+    const panelBgPath = ext === 'webp' ? 'assets/images/bg.webp' : 'assets/images/background2.png';
+    this.load.image('panelBg', panelBgPath);
     this.load.image('item', 'assets/images/item.png');
 
     const suits = ["diamonds", "clubs", "hearts", "spades"];
@@ -47,16 +46,17 @@ export default class GameScene extends Phaser.Scene {
     }));
 
     this.load.image('portrait', 'assets/images/portrait.png');
-    this.load.image('deposit', 'assets/images/deposit.png');
+    this.load.image('deposit', `assets/images/deposit.${ext}`);
 
     this.load.image('lucky_shop', 'assets/images/lucky_shop.png');
-    this.load.image('hilo_game', 'assets/images/hilo_game.png');
-    this.load.image('coinflip_game', 'assets/images/coinflip_game.png');
+    this.load.image('hilo_game', `assets/images/hilo_game.${ext}`);
+    this.load.image('coinflip_game', `assets/images/coinflip_game.${ext}`);
 
-    this.load.image('safe_icon', 'assets/images/safe_icon.png');
-    this.load.image('help_icon', 'assets/images/help_icon.png');
-    this.load.image('music_icon', 'assets/images/music_icon.png');
-    this.load.image('info_icon', 'assets/images/info_icon.png');
+    this.load.image('safe_icon', `assets/images/safe_icon.${ext}`);
+    this.load.image('help_icon', `assets/images/help_icon.${ext}`);
+    this.load.image('music_icon', `assets/images/music_icon.${ext}`);
+
+    this.load.image('info_icon', `assets/images/info_icon.png`);
 
     this.load.image('shadow', 'assets/images/shadow.png');
     this.load.image('card_back', 'assets/images/card_back.png');
