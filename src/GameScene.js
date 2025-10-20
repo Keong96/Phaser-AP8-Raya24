@@ -311,11 +311,22 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setUserBalance(amount) {
-    const v = Number(amount) || 0;
-    this.userBalance = parseFloat(v.toFixed(2));
-    const txt = `Balance: ${currency.format(this.userBalance)} coins`;
-    if (this.hilo && this.hilo.balanceText) this.hilo.balanceText.setText(txt);
-    if (this.coinFlip && this.coinFlip.balanceText) this.coinFlip.balanceText.setText(txt);
+    const numeric = Number(amount);
+    const safeValue = Number.isFinite(numeric) ? numeric : 0;
+    this.userBalance = parseFloat(safeValue.toFixed(2));
+    const formatted = currency.format(this.userBalance);
+
+    if (this.hilo?.balanceText) {
+      this.hilo.balanceText.setText(`${formatted} coins`);
+    }
+
+    if (this.coinFlip?.balanceText) {
+      this.coinFlip.balanceText.setText(`${formatted} coins`);
+    }
+
+    if (this.tokenText) {
+      this.tokenText.setText(formatted);
+    }
   }
 
   //   setupShop() {
@@ -601,20 +612,13 @@ export default class GameScene extends Phaser.Scene {
 
     betPanelContainer.add([balanceLabel, balanceAmount]);
 
-    // For updating both together
-    const balanceText = {
-      setText: (amount) => {
-        balanceAmount.setText(`${currency.format(amount)} coins`);
-      }
-    };
-
     const infoIcon = this.add.image(betPanelX + 375, betPanelY - 240, 'info_icon')
       .setOrigin(0.5).setDisplaySize(48, 48).setInteractive({ useHandCursor: true });
     betPanelContainer.add(infoIcon);
 
     // expose ref for sync
-    this.hilo = this.hilo || {};
-    this.hilo.balanceText = balanceText;
+  this.hilo = this.hilo || {};
+  this.hilo.balanceText = balanceAmount;
 
     // Fixed bet amount - always 10 tokens per play
     this.hiloBetAmount = 10.00;
@@ -666,7 +670,7 @@ export default class GameScene extends Phaser.Scene {
 
       // add prizePool to balance
       this.setUserBalance(this.userBalance + this.prizePool);
-      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      balanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       // play sound
       if (!this.sound.locked) {
@@ -780,7 +784,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Deduct bet from balance
       this.setUserBalance(this.userBalance - this.hiloBetAmount);
-      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      balanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       console.log(`User balance after bet: ${this.userBalance}`);
 
@@ -859,7 +863,7 @@ export default class GameScene extends Phaser.Scene {
           this.hiloGameStarted = false;
         }
 
-        balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+        balanceAmount.setText(`${currency.format(this.userBalance)} coins`);
       });
     };
 
@@ -877,7 +881,7 @@ export default class GameScene extends Phaser.Scene {
       leftArrowImg,
       rightArrowImg,
       currentIndex,
-      balanceText
+      balanceText: balanceAmount
     };
   }
 
@@ -1073,10 +1077,19 @@ export default class GameScene extends Phaser.Scene {
 
     // balance text (shared)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const coinBalanceText = this.add.text(coinBetPanelX - 400, coinBetPanelY - 200, `Balance: ${currency.format(this.userBalance)} coins`, {
-      font: "48px Inter", color: '#000000', align: 'left'
+    const coinBalanceLabel = this.add.text(coinBetPanelX - 400, coinBetPanelY - 200, "Balance:", {
+      font: "bold 36px Inter",
+      color: "#000000",
+      align: "left"
     }).setOrigin(0, 0.5);
-    betPanelContainer.add(coinBalanceText);
+
+    const coinBalanceAmount = this.add.text(coinBalanceLabel.x + coinBalanceLabel.width + 12, coinBetPanelY - 200, `${currency.format(this.userBalance)} coins`, {
+      font: "bold 36px Inter",
+      color: "#B68E62",
+      align: "left"
+    }).setOrigin(0, 0.5);
+
+    betPanelContainer.add([coinBalanceLabel, coinBalanceAmount]);
 
     const infoIcon = this.add.image(coinBetPanelX + 375, coinBetPanelY - 200, 'info_icon')
       .setOrigin(0.5).setDisplaySize(48, 48).setInteractive({ useHandCursor: true });
@@ -1084,7 +1097,7 @@ export default class GameScene extends Phaser.Scene {
 
     // expose ref for sync
     this.coinFlip = this.coinFlip || {};
-    this.coinFlip.balanceText = coinBalanceText;
+    this.coinFlip.balanceText = coinBalanceAmount;
 
     // Fixed bet amount - always 10 tokens per play
     this.coinBetAmount = 10.00;
@@ -1135,8 +1148,9 @@ export default class GameScene extends Phaser.Scene {
     coinCashoutBg.on('pointerdown', () => {
       if (!this.coinCashoutEnabled) return;
 
-      this.userBalance = parseFloat((this.userBalance + this.coinPrizePool).toFixed(2));
-  coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)} coins`);
+      // add prizePool to balance
+      this.setUserBalance(this.userBalance + this.coinPrizePool);
+      coinBalanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       if (!this.sound.locked) this.sound.play('ka-chingSound', { volume: 1 });
       else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('ka-chingSound', { volume: 1 }));
@@ -1169,7 +1183,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Deduct bet from balance
       this.setUserBalance(this.userBalance - this.coinBetAmount);
-  coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)} coins`);
+      coinBalanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       if (!this.coinGameStarted) {
         this.coinGameStarted = true;
@@ -1235,7 +1249,7 @@ export default class GameScene extends Phaser.Scene {
           this.coinGameStarted = false;
         }
 
-  coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)} coins`);
+        coinBalanceAmount.setText(`${currency.format(this.userBalance)} coins`);
       });
     };
 
@@ -1248,7 +1262,7 @@ export default class GameScene extends Phaser.Scene {
       coinImage,
       coinHeadBtn,
       coinTailBtn,
-      coinBalanceText,
+      balanceText: coinBalanceAmount,
       updateCoinCashout,
       coinCurrentSide
     };
