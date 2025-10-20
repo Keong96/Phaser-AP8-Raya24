@@ -329,6 +329,48 @@ export default class GameScene extends Phaser.Scene {
     }
   }
 
+  addFloatingPanel(container, centerX, centerY, width, height, radius = 20) {
+    const shadowLayers = [
+      { offsetY: 5, blur: 6, alpha: 0.03 },
+      { offsetY: 5, blur: 3, alpha: 0.04 },
+      { offsetY: 5, blur: 1.5, alpha: 0.03 }
+    ];
+
+    shadowLayers.forEach(layer => {
+      const shadowGraphics = this.add.graphics();
+      shadowGraphics.fillStyle(0x000000, layer.alpha);
+      shadowGraphics.fillRoundedRect(
+        centerX - width / 2 - layer.blur,
+        centerY - height / 2 + layer.offsetY - layer.blur,
+        width + (layer.blur * 2),
+        height + (layer.blur * 2),
+        radius + layer.blur
+      );
+      container.add(shadowGraphics);
+    });
+
+    const panelGraphics = this.add.graphics();
+    panelGraphics.fillStyle(0xffffff, 1);
+    panelGraphics.fillRoundedRect(
+      centerX - width / 2,
+      centerY - height / 2,
+      width,
+      height,
+      radius
+    );
+    panelGraphics.lineStyle(2, 0xe0e0e0, 1);
+    panelGraphics.strokeRoundedRect(
+      centerX - width / 2,
+      centerY - height / 2,
+      width,
+      height,
+      radius
+    );
+    container.add(panelGraphics);
+
+    return panelGraphics;
+  }
+
   //   setupShop() {
   //     const panelWidth = this.contentWidth;
   //     const panelHeight = this.contentHeight;
@@ -556,44 +598,14 @@ export default class GameScene extends Phaser.Scene {
     const floatingPanelY = betPanelY - betPanelHeight / 2 + 270;
     const floatingPanelRadius = 20;
 
-    // soft shadow layers
-    const shadowLayers = [
-      { offsetY: 5, blur: 6, alpha: 0.03 },
-      { offsetY: 5, blur: 3, alpha: 0.04 },
-      { offsetY: 5, blur: 1.5, alpha: 0.03 }
-    ];
-
-    shadowLayers.forEach(layer => {
-      const shadowGraphics = this.add.graphics();
-      shadowGraphics.fillStyle(0x000000, layer.alpha);
-      shadowGraphics.fillRoundedRect(
-        betPanelX - floatingPanelWidth / 2 - layer.blur,
-        floatingPanelY - floatingPanelHeight / 2 + layer.offsetY - layer.blur,
-        floatingPanelWidth + (layer.blur * 2),
-        floatingPanelHeight + (layer.blur * 2),
-        floatingPanelRadius + layer.blur
-      );
-      betPanelContainer.add(shadowGraphics);
-    });
-
-    const floatingPanelGraphics = this.add.graphics();
-    floatingPanelGraphics.fillStyle(0xffffff, 1);
-    floatingPanelGraphics.fillRoundedRect(
-      betPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
+    this.addFloatingPanel(
+      betPanelContainer,
+      betPanelX,
+      floatingPanelY,
       floatingPanelWidth,
       floatingPanelHeight,
       floatingPanelRadius
     );
-    floatingPanelGraphics.lineStyle(2, 0xe0e0e0, 1);
-    floatingPanelGraphics.strokeRoundedRect(
-      betPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
-      floatingPanelWidth,
-      floatingPanelHeight,
-      floatingPanelRadius
-    );
-    betPanelContainer.add(floatingPanelGraphics);
 
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
@@ -637,7 +649,7 @@ export default class GameScene extends Phaser.Scene {
     betPanelContainer.add(infoTextIcon);
 
     const infoText = this.add.text(betPanelX - 164, betPanelY + 225, `Betting 1 time with 10 coins.`, {
-      font: "400 28px Inter", color: '#636363', align: 'left'
+      font: "24px Inter", color: '#636363', align: 'left'
     }).setOrigin(0, 0.5);
     betPanelContainer.add(infoText);
 
@@ -1012,57 +1024,27 @@ export default class GameScene extends Phaser.Scene {
     const betPanelContainer = this.add.container(0, panelHeight);
     this.coinFlipContainer.add(betPanelContainer);
 
-    const coinBetPanelX = coinContentLeft + coinContentW / 2 - 10;
+    const coinBetPanelX = coinContentLeft + coinContentW / 2 - 20;
     const coinBetPanelY = betPanelHeight / 2;
 
     const coinBetBg = this.add.rectangle(coinBetPanelX, coinBetPanelY, coinContentW, betPanelHeight, 0xFFFFFF, 0.95)
-      .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+      .setOrigin(0.5);
     betPanelContainer.add(coinBetBg);
 
-    // floating panel
-    const floatingPanelWidth = coinContentW - 250;
-    const floatingPanelHeight = 500;
-    const floatingPanelY = coinBetPanelY - betPanelHeight / 2 + 300;
+    // floating panel (match hilo styling)
+    const floatingPanelWidth = coinContentW - 220;
+    const floatingPanelHeight = 580;
+    const floatingPanelY = coinBetPanelY - betPanelHeight / 2 + 270;
     const floatingPanelRadius = 20;
 
-    // soft shadow layers
-    const shadowLayers = [
-      { offsetY: 5, blur: 6, alpha: 0.03 },
-      { offsetY: 5, blur: 3, alpha: 0.04 },
-      { offsetY: 5, blur: 1.5, alpha: 0.03 }
-    ];
-
-    shadowLayers.forEach(layer => {
-      const shadowGraphics = this.add.graphics();
-      shadowGraphics.fillStyle(0x000000, layer.alpha);
-      shadowGraphics.fillRoundedRect(
-        coinBetPanelX - floatingPanelWidth / 2 - layer.blur,
-        floatingPanelY - floatingPanelHeight / 2 + layer.offsetY - layer.blur,
-        floatingPanelWidth + (layer.blur * 2),
-        floatingPanelHeight + (layer.blur * 2),
-        floatingPanelRadius + layer.blur
-      );
-      betPanelContainer.add(shadowGraphics);
-    });
-
-    const floatingPanelGraphics = this.add.graphics();
-    floatingPanelGraphics.fillStyle(0xffffff, 1);
-    floatingPanelGraphics.fillRoundedRect(
-      coinBetPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
+    this.addFloatingPanel(
+      betPanelContainer,
+      coinBetPanelX,
+      floatingPanelY,
       floatingPanelWidth,
       floatingPanelHeight,
       floatingPanelRadius
     );
-    floatingPanelGraphics.lineStyle(2, 0xe0e0e0, 1);
-    floatingPanelGraphics.strokeRoundedRect(
-      coinBetPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
-      floatingPanelWidth,
-      floatingPanelHeight,
-      floatingPanelRadius
-    );
-    betPanelContainer.add(floatingPanelGraphics);
 
     const slotSpacing = 170;
     this.coinFlipHistorySlot = [];
@@ -1077,13 +1059,13 @@ export default class GameScene extends Phaser.Scene {
 
     // balance text (shared)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const coinBalanceLabel = this.add.text(coinBetPanelX - 400, coinBetPanelY - 200, "Balance:", {
+    const coinBalanceLabel = this.add.text(coinBetPanelX - 400, coinBetPanelY - 240, "Balance:", {
       font: "bold 36px Inter",
       color: "#000000",
       align: "left"
     }).setOrigin(0, 0.5);
 
-    const coinBalanceAmount = this.add.text(coinBalanceLabel.x + coinBalanceLabel.width + 12, coinBetPanelY - 200, `${currency.format(this.userBalance)} coins`, {
+    const coinBalanceAmount = this.add.text(coinBalanceLabel.x + coinBalanceLabel.width + 12, coinBetPanelY - 240, `${currency.format(this.userBalance)} coins`, {
       font: "bold 36px Inter",
       color: "#B68E62",
       align: "left"
@@ -1091,7 +1073,7 @@ export default class GameScene extends Phaser.Scene {
 
     betPanelContainer.add([coinBalanceLabel, coinBalanceAmount]);
 
-    const infoIcon = this.add.image(coinBetPanelX + 375, coinBetPanelY - 200, 'info_icon')
+    const infoIcon = this.add.image(coinBetPanelX + 375, coinBetPanelY - 240, 'info_icon')
       .setOrigin(0.5).setDisplaySize(48, 48).setInteractive({ useHandCursor: true });
     betPanelContainer.add(infoIcon);
 
