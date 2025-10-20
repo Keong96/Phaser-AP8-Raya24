@@ -62,23 +62,22 @@ export default class GameScene extends Phaser.Scene {
     this.load.image('info_icon', `assets/images/info_icon.png`);
 
     this.load.image('shadow', 'assets/images/shadow.png');
-    this.load.image('card_back', 'assets/images/card_back.png');
-    this.load.image('up_arrow', 'assets/images/up_arrow.png');
-    this.load.image('down_arrow', 'assets/images/down_arrow.png');
+    this.load.image('card_back', `assets/images/cards/card_back.${ext}`);
+    this.load.image('up_arrow', `assets/images/up_arrow.${ext}`);
+    this.load.image('down_arrow', `assets/images/down_arrow.${ext}`);
     this.load.image('bet_higher', 'assets/images/bet_higher.png');
     this.load.image('bet_lower', 'assets/images/bet_lower.png');
-    this.load.image('bet_head', 'assets/images/bet_head.png');
-    this.load.image('bet_tail', 'assets/images/bet_tail.png');
+    this.load.image('bet_head', `assets/images/bet_head.${ext}`);
+    this.load.image('bet_tail', `assets/images/bet_tail.${ext}`);
 
     this.load.image('bet_value_bg', 'assets/images/bet_value_bg.png');
     this.load.image('minus_button', 'assets/images/minus_button.png');
     this.load.image('plus_button', 'assets/images/plus_button.png');
     this.load.image('cashout_button', 'assets/images/cashout_button.png');
 
-    this.load.image('coin_head', 'assets/images/coin_head.png');
-    this.load.image('coin_tail', 'assets/images/coin_tail.png');
-
-    this.load.image('history_slot', 'assets/images/history_slot.png');
+    this.load.image('coin_head', `assets/images/coin_head.${ext}`);
+    this.load.image('coin_tail', `assets/images/coin_tail.${ext}`);
+    this.load.image('history_slot', `assets/images/history_slot.${ext}`);
 
     // Sound effects
     this.load.audio('bgm', 'assets/sounds/background_music.mp3');
@@ -141,6 +140,11 @@ export default class GameScene extends Phaser.Scene {
 
     this.createHeader();
     this.createGameNavButtons();
+
+    const startingBalance = typeof this.userBalance === 'number'
+      ? this.userBalance
+      : (typeof this.balance === 'number' ? this.balance : 0);
+    this.setUserBalance(startingBalance);
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('game:loading-message', { detail: 'Welcome to the lucky lobby!' }));
@@ -232,16 +236,35 @@ export default class GameScene extends Phaser.Scene {
 
     // user info (username + token)
     const usernameText = this.add.text(startX + 290, startY + 55, 'Donald Trump', {
-      font: '40px Inter',
+      font: 'bold 40px Inter',
       color: '#B68B82',
       align: 'left'
     }).setOrigin(0, 0.5);
 
-    this.tokenText = this.add.text(startX + 290, startY + 100, 'Token: 12345 coins', {
-      font: '32px Inter',
+    // token info
+    const tokenLabel = this.add.text(startX + 290, startY + 100, 'Token:', {
+      font: '400 32px Inter',
+      color: '#000000',
+      align: 'left'
+    }).setOrigin(0, 0.5);
+
+    const initialTokenBalance = typeof this.userBalance === 'number'
+      ? this.userBalance
+      : (typeof this.balance === 'number' ? this.balance : 0);
+    const tokenAmount = this.add.text(tokenLabel.x + tokenLabel.width + 10, startY + 100, currency.format(initialTokenBalance), {
+      font: 'bold 32px Inter',
       color: '#B68B82',
       align: 'left'
     }).setOrigin(0, 0.5);
+
+    const tokenUnit = this.add.text(tokenAmount.x + tokenAmount.width + 8, startY + 100, 'coins', {
+      font: '400 32px Inter',
+      color: '#B68B82',
+      align: 'left'
+    }).setOrigin(0, 0.5);
+
+    this.tokenText = tokenAmount;
+    this.headerContainer.add([tokenLabel, tokenAmount, tokenUnit]);
 
     // deposit button
     const depositBtn = this.add.image(startX + panelWidth - 200, startY + 70, 'deposit')
@@ -299,11 +322,64 @@ export default class GameScene extends Phaser.Scene {
   }
 
   setUserBalance(amount) {
-    const v = Number(amount) || 0;
-    this.userBalance = parseFloat(v.toFixed(2));
-    const txt = `Balance: ${currency.format(this.userBalance)} coins`;
-    if (this.hilo && this.hilo.balanceText) this.hilo.balanceText.setText(txt);
-    if (this.coinFlip && this.coinFlip.balanceText) this.coinFlip.balanceText.setText(txt);
+    const numeric = Number(amount);
+    const safeValue = Number.isFinite(numeric) ? numeric : 0;
+    this.userBalance = parseFloat(safeValue.toFixed(2));
+    const formatted = currency.format(this.userBalance);
+
+    if (this.hilo?.balanceText) {
+      this.hilo.balanceText.setText(`${formatted} coins`);
+    }
+
+    if (this.coinFlip?.balanceText) {
+      this.coinFlip.balanceText.setText(`${formatted} coins`);
+    }
+
+    if (this.tokenText) {
+      this.tokenText.setText(formatted);
+    }
+  }
+
+  addFloatingPanel(container, centerX, centerY, width, height, radius = 20) {
+    const shadowLayers = [
+      { offsetY: 5, blur: 6, alpha: 0.03 },
+      { offsetY: 5, blur: 3, alpha: 0.04 },
+      { offsetY: 5, blur: 1.5, alpha: 0.03 }
+    ];
+
+    shadowLayers.forEach(layer => {
+      const shadowGraphics = this.add.graphics();
+      shadowGraphics.fillStyle(0x000000, layer.alpha);
+      shadowGraphics.fillRoundedRect(
+        centerX - width / 2 - layer.blur,
+        centerY - height / 2 + layer.offsetY - layer.blur,
+        width + (layer.blur * 2),
+        height + (layer.blur * 2),
+        radius + layer.blur
+      );
+      container.add(shadowGraphics);
+    });
+
+    const panelGraphics = this.add.graphics();
+    panelGraphics.fillStyle(0xffffff, 1);
+    panelGraphics.fillRoundedRect(
+      centerX - width / 2,
+      centerY - height / 2,
+      width,
+      height,
+      radius
+    );
+    panelGraphics.lineStyle(2, 0xe0e0e0, 1);
+    panelGraphics.strokeRoundedRect(
+      centerX - width / 2,
+      centerY - height / 2,
+      width,
+      height,
+      radius
+    );
+    container.add(panelGraphics);
+
+    return panelGraphics;
   }
 
   //   setupShop() {
@@ -508,7 +584,7 @@ export default class GameScene extends Phaser.Scene {
     const betPanelContainer = this.add.container(0, panelHeight);
     this.hiloContainer.add(betPanelContainer);
 
-    const betPanelX = contentLeft + contentW / 2 - 10;
+    const betPanelX = contentLeft + contentW / 2 - 20;
     const betPanelY = betPanelHeight / 2;
 
     const slotSpacing = 170;
@@ -524,68 +600,48 @@ export default class GameScene extends Phaser.Scene {
     betPanelContainer.add(this.hiloHistorySlot);
 
     const betBg = this.add.rectangle(betPanelX, betPanelY, contentW, betPanelHeight, 0xFFFFFF, 0.95)
-      .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+      .setOrigin(0.5);
     betPanelContainer.add(betBg);
 
     // floating panel
-    const floatingPanelWidth = contentW - 250;
-    const floatingPanelHeight = 500;
-    const floatingPanelY = betPanelY - betPanelHeight / 2 + 300;
+    const floatingPanelWidth = contentW - 220;
+    const floatingPanelHeight = 580;
+    const floatingPanelY = betPanelY - betPanelHeight / 2 + 270;
     const floatingPanelRadius = 20;
 
-    // soft shadow layers
-    const shadowLayers = [
-      { offsetY: 5, blur: 6, alpha: 0.03 },
-      { offsetY: 5, blur: 3, alpha: 0.04 },
-      { offsetY: 5, blur: 1.5, alpha: 0.03 }
-    ];
-
-    shadowLayers.forEach(layer => {
-      const shadowGraphics = this.add.graphics();
-      shadowGraphics.fillStyle(0x000000, layer.alpha);
-      shadowGraphics.fillRoundedRect(
-        betPanelX - floatingPanelWidth / 2 - layer.blur,
-        floatingPanelY - floatingPanelHeight / 2 + layer.offsetY - layer.blur,
-        floatingPanelWidth + (layer.blur * 2),
-        floatingPanelHeight + (layer.blur * 2),
-        floatingPanelRadius + layer.blur
-      );
-      betPanelContainer.add(shadowGraphics);
-    });
-
-    const floatingPanelGraphics = this.add.graphics();
-    floatingPanelGraphics.fillStyle(0xffffff, 1);
-    floatingPanelGraphics.fillRoundedRect(
-      betPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
+    this.addFloatingPanel(
+      betPanelContainer,
+      betPanelX,
+      floatingPanelY,
       floatingPanelWidth,
       floatingPanelHeight,
       floatingPanelRadius
     );
-    floatingPanelGraphics.lineStyle(2, 0xe0e0e0, 1);
-    floatingPanelGraphics.strokeRoundedRect(
-      betPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
-      floatingPanelWidth,
-      floatingPanelHeight,
-      floatingPanelRadius
-    );
-    betPanelContainer.add(floatingPanelGraphics);
 
     // balance text (local to hilo screen)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const balanceText = this.add.text(betPanelX - 400, betPanelY - 200, `Balance: ${currency.format(this.userBalance)} coins`, {
-      font: "48px Inter", color: '#000000', align: 'left'
-    }).setOrigin(0, 0.5);
-    betPanelContainer.add(balanceText);
 
-    const infoIcon = this.add.image(betPanelX + 375, betPanelY - 200, 'info_icon')
+    const balanceLabel = this.add.text(betPanelX - 400, betPanelY - 240, "Balance:", {
+      font: "bold 36px Inter",
+      color: "#000000",
+      align: "left"
+    }).setOrigin(0, 0.5);
+
+    const balanceAmount = this.add.text(balanceLabel.x + balanceLabel.width + 12, betPanelY - 240, `${currency.format(this.userBalance)} coins`, {
+      font: "bold 36px Inter",
+      color: "#B68E62",
+      align: "left"
+    }).setOrigin(0, 0.5);
+
+    betPanelContainer.add([balanceLabel, balanceAmount]);
+
+    const infoIcon = this.add.image(betPanelX + 375, betPanelY - 240, 'info_icon')
       .setOrigin(0.5).setDisplaySize(48, 48).setInteractive({ useHandCursor: true });
     betPanelContainer.add(infoIcon);
 
     // expose ref for sync
-    this.hilo = this.hilo || {};
-    this.hilo.balanceText = balanceText;
+  this.hilo = this.hilo || {};
+  this.hilo.balanceText = balanceAmount;
 
     // Fixed bet amount - always 10 tokens per play
     this.hiloBetAmount = 10.00;
@@ -637,7 +693,7 @@ export default class GameScene extends Phaser.Scene {
 
       // add prizePool to balance
       this.setUserBalance(this.userBalance + this.prizePool);
-      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      balanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       // play sound
       if (!this.sound.locked) {
@@ -751,7 +807,9 @@ export default class GameScene extends Phaser.Scene {
 
       // Deduct bet from balance
       this.setUserBalance(this.userBalance - this.hiloBetAmount);
-      balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      balanceAmount.setText(`${currency.format(this.userBalance)} coins`);
+
+      console.log(`User balance after bet: ${this.userBalance}`);
 
       if (!this.hiloGameStarted) {
         this.hiloGameStarted = true;
@@ -790,7 +848,7 @@ export default class GameScene extends Phaser.Scene {
           const emptySlot = this.hiloHistorySlot.find(s => !s.cardImage);
           if (emptySlot) {
             const cardOnSlot = this.add.image(emptySlot.x, emptySlot.y, indexToKey(currentIndex))
-              .setDisplaySize(96, 96)
+              .setDisplaySize(76, 98)
               .setOrigin(0.5);
             emptySlot.cardImage = cardOnSlot;
             betPanelContainer.add(cardOnSlot);
@@ -828,7 +886,7 @@ export default class GameScene extends Phaser.Scene {
           this.hiloGameStarted = false;
         }
 
-        balanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+        balanceAmount.setText(`${currency.format(this.userBalance)} coins`);
       });
     };
 
@@ -846,7 +904,7 @@ export default class GameScene extends Phaser.Scene {
       leftArrowImg,
       rightArrowImg,
       currentIndex,
-      balanceText
+      balanceText: balanceAmount
     };
   }
 
@@ -977,57 +1035,27 @@ export default class GameScene extends Phaser.Scene {
     const betPanelContainer = this.add.container(0, panelHeight);
     this.coinFlipContainer.add(betPanelContainer);
 
-    const coinBetPanelX = coinContentLeft + coinContentW / 2 - 10;
+    const coinBetPanelX = coinContentLeft + coinContentW / 2 - 20;
     const coinBetPanelY = betPanelHeight / 2;
 
     const coinBetBg = this.add.rectangle(coinBetPanelX, coinBetPanelY, coinContentW, betPanelHeight, 0xFFFFFF, 0.95)
-      .setOrigin(0.5).setStrokeStyle(2, 0x888888, 0.3);
+      .setOrigin(0.5);
     betPanelContainer.add(coinBetBg);
 
-    // floating panel
-    const floatingPanelWidth = coinContentW - 250;
-    const floatingPanelHeight = 500;
-    const floatingPanelY = coinBetPanelY - betPanelHeight / 2 + 300;
+    // floating panel (match hilo styling)
+    const floatingPanelWidth = coinContentW - 220;
+    const floatingPanelHeight = 580;
+    const floatingPanelY = coinBetPanelY - betPanelHeight / 2 + 270;
     const floatingPanelRadius = 20;
 
-    // soft shadow layers
-    const shadowLayers = [
-      { offsetY: 5, blur: 6, alpha: 0.03 },
-      { offsetY: 5, blur: 3, alpha: 0.04 },
-      { offsetY: 5, blur: 1.5, alpha: 0.03 }
-    ];
-
-    shadowLayers.forEach(layer => {
-      const shadowGraphics = this.add.graphics();
-      shadowGraphics.fillStyle(0x000000, layer.alpha);
-      shadowGraphics.fillRoundedRect(
-        coinBetPanelX - floatingPanelWidth / 2 - layer.blur,
-        floatingPanelY - floatingPanelHeight / 2 + layer.offsetY - layer.blur,
-        floatingPanelWidth + (layer.blur * 2),
-        floatingPanelHeight + (layer.blur * 2),
-        floatingPanelRadius + layer.blur
-      );
-      betPanelContainer.add(shadowGraphics);
-    });
-
-    const floatingPanelGraphics = this.add.graphics();
-    floatingPanelGraphics.fillStyle(0xffffff, 1);
-    floatingPanelGraphics.fillRoundedRect(
-      coinBetPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
+    this.addFloatingPanel(
+      betPanelContainer,
+      coinBetPanelX,
+      floatingPanelY,
       floatingPanelWidth,
       floatingPanelHeight,
       floatingPanelRadius
     );
-    floatingPanelGraphics.lineStyle(2, 0xe0e0e0, 1);
-    floatingPanelGraphics.strokeRoundedRect(
-      coinBetPanelX - floatingPanelWidth / 2,
-      floatingPanelY - floatingPanelHeight / 2,
-      floatingPanelWidth,
-      floatingPanelHeight,
-      floatingPanelRadius
-    );
-    betPanelContainer.add(floatingPanelGraphics);
 
     const slotSpacing = 170;
     this.coinFlipHistorySlot = [];
@@ -1042,18 +1070,27 @@ export default class GameScene extends Phaser.Scene {
 
     // balance text (shared)
     this.userBalance = (typeof this.userBalance === 'number') ? this.userBalance : (typeof this.balance === 'number' ? this.balance : 1000);
-    const coinBalanceText = this.add.text(coinBetPanelX - 400, coinBetPanelY - 200, `Balance: ${currency.format(this.userBalance)} coins`, {
-      font: "48px Inter", color: '#000000', align: 'left'
+    const coinBalanceLabel = this.add.text(coinBetPanelX - 400, coinBetPanelY - 240, "Balance:", {
+      font: "bold 36px Inter",
+      color: "#000000",
+      align: "left"
     }).setOrigin(0, 0.5);
-    betPanelContainer.add(coinBalanceText);
 
-    const infoIcon = this.add.image(coinBetPanelX + 375, coinBetPanelY - 200, 'info_icon')
+    const coinBalanceAmount = this.add.text(coinBalanceLabel.x + coinBalanceLabel.width + 12, coinBetPanelY - 240, `${currency.format(this.userBalance)} coins`, {
+      font: "bold 36px Inter",
+      color: "#B68E62",
+      align: "left"
+    }).setOrigin(0, 0.5);
+
+    betPanelContainer.add([coinBalanceLabel, coinBalanceAmount]);
+
+    const infoIcon = this.add.image(coinBetPanelX + 375, coinBetPanelY - 240, 'info_icon')
       .setOrigin(0.5).setDisplaySize(48, 48).setInteractive({ useHandCursor: true });
     betPanelContainer.add(infoIcon);
 
     // expose ref for sync
     this.coinFlip = this.coinFlip || {};
-    this.coinFlip.balanceText = coinBalanceText;
+    this.coinFlip.balanceText = coinBalanceAmount;
 
     // Fixed bet amount - always 10 tokens per play
     this.coinBetAmount = 10.00;
@@ -1104,8 +1141,9 @@ export default class GameScene extends Phaser.Scene {
     coinCashoutBg.on('pointerdown', () => {
       if (!this.coinCashoutEnabled) return;
 
-      this.userBalance = parseFloat((this.userBalance + this.coinPrizePool).toFixed(2));
-      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      // add prizePool to balance
+      this.setUserBalance(this.userBalance + this.coinPrizePool);
+      coinBalanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       if (!this.sound.locked) this.sound.play('ka-chingSound', { volume: 1 });
       else this.sound.once(Phaser.Sound.Events.UNLOCKED, () => this.sound.play('ka-chingSound', { volume: 1 }));
@@ -1138,7 +1176,7 @@ export default class GameScene extends Phaser.Scene {
 
       // Deduct bet from balance
       this.setUserBalance(this.userBalance - this.coinBetAmount);
-      coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+      coinBalanceAmount.setText(`${currency.format(this.userBalance)} coins`);
 
       if (!this.coinGameStarted) {
         this.coinGameStarted = true;
@@ -1170,7 +1208,7 @@ export default class GameScene extends Phaser.Scene {
               .setDisplaySize(96, 96)
               .setOrigin(0.5);
             emptySlot.coinImage = coinOnSlot;
-            this.coinFlipContainer.add(coinOnSlot);
+            betPanelContainer.add(coinOnSlot);
           }
 
           // check if all 5 slots filled
@@ -1204,7 +1242,7 @@ export default class GameScene extends Phaser.Scene {
           this.coinGameStarted = false;
         }
 
-        coinBalanceText.setText(`Balance: ${currency.format(this.userBalance)}`);
+        coinBalanceAmount.setText(`${currency.format(this.userBalance)} coins`);
       });
     };
 
@@ -1217,7 +1255,7 @@ export default class GameScene extends Phaser.Scene {
       coinImage,
       coinHeadBtn,
       coinTailBtn,
-      coinBalanceText,
+      balanceText: coinBalanceAmount,
       updateCoinCashout,
       coinCurrentSide
     };
