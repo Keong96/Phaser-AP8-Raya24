@@ -138,6 +138,11 @@ export default class GameScene extends Phaser.Scene {
     this.createHeader();
     this.createGameNavButtons();
 
+    const startingBalance = typeof this.userBalance === 'number'
+      ? this.userBalance
+      : (typeof this.balance === 'number' ? this.balance : 0);
+    this.setUserBalance(startingBalance);
+
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('game:loading-message', { detail: 'Welcome to the lucky lobby!' }));
       window.dispatchEvent(new Event('game:ready'));
@@ -240,7 +245,10 @@ export default class GameScene extends Phaser.Scene {
       align: 'left'
     }).setOrigin(0, 0.5);
 
-    const tokenAmount = this.add.text(tokenLabel.x + tokenLabel.width + 10, startY + 100, '12345', {
+    const initialTokenBalance = typeof this.userBalance === 'number'
+      ? this.userBalance
+      : (typeof this.balance === 'number' ? this.balance : 0);
+    const tokenAmount = this.add.text(tokenLabel.x + tokenLabel.width + 10, startY + 100, currency.format(initialTokenBalance), {
       font: 'bold 32px Inter',
       color: '#B68B82',
       align: 'left'
