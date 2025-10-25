@@ -13,8 +13,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   supportsWebP() {
-    const canvas = document.createElement('canvas')
-    return canvas.toDataURL('image/webp').startsWith('data:image/webp')
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = img.onerror = () => resolve(img.complete && img.width > 0);
+      img.src = 'data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEADsD+JaQAA3AAAAAA';
+    });
   }
 
   init(data) {
