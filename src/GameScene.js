@@ -38,6 +38,7 @@ export default class GameScene extends Phaser.Scene {
     const panelBgPath = ext === 'webp' ? 'assets/images/bg.webp' : 'assets/images/background2.png';
     this.load.image('panelBg', panelBgPath);
     this.load.image('item', 'assets/images/item.png');
+    this.load.image('homeBg', 'assets/images/homeBG.png');
 
     const suits = ["diamonds", "clubs", "hearts", "spades"];
     const ranks = ["ace", "2", "3", "4", "5", "6", "7", "8", "9", "10", "jack", "queen", "king"];
@@ -46,7 +47,11 @@ export default class GameScene extends Phaser.Scene {
     }));
 
     this.load.image('portrait', 'assets/images/portrait.png');
+    this.load.image('portrait_big', 'assets/images/portrait_big.png');
     this.load.image('deposit', `assets/images/deposit.${ext}`);
+
+    this.load.image('hilo_menu_button', 'assets/images/hilo_menu_button.png');
+    this.load.image('coinflip_menu_button', 'assets/images/coinflip_menu_button.png');
 
     this.load.image('lucky_shop', 'assets/images/lucky_shop.png');
     this.load.image('hilo_game', `assets/images/hilo_game.${ext}`);
@@ -83,6 +88,11 @@ export default class GameScene extends Phaser.Scene {
     this.load.audio('loseSound', 'assets/sounds/lose.mp3');
     this.load.audio('ka-chingSound', 'assets/sounds/ka-ching.mp3');
     this.load.image('cashout_button', 'assets/images/cashout_button.png');
+
+    //popup
+    this.load.image('btn_okay', `assets/images/btn_okay.png`);
+    this.load.image('btn_no', `assets/images/btn_no.png`);
+    this.load.image('btn_deposit', `assets/images/btn_deposit.png`);
   }
 
   create() {
@@ -126,17 +136,16 @@ export default class GameScene extends Phaser.Scene {
 
     // containers (positioned at contentX so children use same local coords)
     // Start below the header
+    this.homeContainer = this.add.container(contentX, this.headerHeight).setVisible(true);
     this.shopContainer = this.add.container(contentX, this.headerHeight).setVisible(false);
-    this.hiloContainer = this.add.container(contentX, this.headerHeight).setVisible(true);
+    this.hiloContainer = this.add.container(contentX, this.headerHeight).setVisible(false);
     this.coinFlipContainer = this.add.container(contentX, this.headerHeight).setVisible(false);
 
     // build screens
+    this.setupHome();
     // this.setupShop();
     this.setupHilo();
     this.setupCoinFlip();
-
-    this.createHeader();
-    this.createGameNavButtons();
 
     const startingBalance = typeof this.userBalance === 'number'
       ? this.userBalance
@@ -289,8 +298,11 @@ export default class GameScene extends Phaser.Scene {
     this.add.existing(this.navContainer);
 
     // --- Game Nav Buttons (Vertical) ---
-    const buttons = ['lucky_shop', 'hilo_game', 'coinflip_game'];
-    const containers = [this.shopContainer, this.hiloContainer, this.coinFlipContainer];
+    // const buttons = ['lucky_shop', 'hilo_game', 'coinflip_game'];
+    // const containers = [this.shopContainer, this.hiloContainer, this.coinFlipContainer];
+
+    const buttons = ['hilo_game', 'coinflip_game'];
+    const containers = [this.hiloContainer, this.coinFlipContainer];
     const spacingY = 150;
     const btnX = panelWidth - 190; // Position to the right of content
     const btnStartY = 220;
@@ -377,6 +389,127 @@ export default class GameScene extends Phaser.Scene {
     container.add(panelGraphics);
 
     return panelGraphics;
+  }
+
+  createPopup(config) {
+    const {
+      title = 'Notice',
+      message = '',
+      mode = 'ok', // 'ok' | 'yesno'
+      onOk = null,
+      onYes = null,
+      onNo = null,
+      yesButton = 'btn_yes',
+      noButton = 'btn_no',
+      okButton = 'btn_ok',
+      width = 600,
+      height = 400,
+      radius = 20
+    } = config;
+
+    const centerX = this.scale.width / 2;
+    const centerY = this.scale.height / 2;
+    const container = this.add.container(0, 0);
+
+    // Overlay
+    const overlay = this.add.rectangle(0, 0, this.scale.width, this.scale.height, 0x000000, 0.5)
+      .setOrigin(0)
+      .setInteractive();
+    container.add(overlay);
+
+    // Panel
+    const panel = this.add.graphics();
+    panel.fillStyle(0xffffff, 1);
+    panel.fillRoundedRect(centerX - width / 2, centerY - height / 2, width, height, radius);
+    panel.lineStyle(2, 0xe0e0e0, 1);
+    panel.strokeRoundedRect(centerX - width / 2, centerY - height / 2, width, height, radius);
+    container.add(panel);
+
+    // Title
+    const titleText = this.add.text(centerX, centerY - height / 3, title, {
+      fontSize: '36px',
+      fontStyle: 'bold',
+      color: '#000',
+      align: 'center'
+    }).setOrigin(0.5);
+    container.add(titleText);
+
+    // Message
+    const messageText = this.add.text(centerX, centerY - height / 6, message, {
+      fontSize: '28px',
+      color: '#333',
+      align: 'center',
+      wordWrap: { width: width - 80 }
+    }).setOrigin(0.5);
+    container.add(messageText);
+
+    // Close button (drawn)
+    const closeSize = 36;
+    const closeX = centerX + width / 2 - closeSize;
+    const closeY = centerY - height / 2 + closeSize;
+
+    const closeBtn = this.add.graphics();
+    closeBtn.fillStyle(0xffffff, 1);
+    closeBtn.fillCircle(closeX, closeY, 20);
+    closeBtn.lineStyle(3, 0x999999);
+    closeBtn.beginPath();
+    closeBtn.moveTo(closeX - 8, closeY - 8);
+    closeBtn.lineTo(closeX + 8, closeY + 8);
+    closeBtn.moveTo(closeX + 8, closeY - 8);
+    closeBtn.lineTo(closeX - 8, closeY + 8);
+    closeBtn.strokePath();
+    closeBtn.setInteractive(
+      new Phaser.Geom.Circle(closeX, closeY, 20),
+      Phaser.Geom.Circle.Contains
+    );
+    closeBtn.on('pointerup', () => container.destroy());
+    container.add(closeBtn);
+
+    // Buttons
+    const buttonY = centerY + height / 3;
+
+    if (mode === 'ok') {
+      const btnWidth = width * 0.8; // 60% of popup width
+      const btnHeight = height * 0.2; // proportionate height
+      const okBtn = this.add.image(centerX, buttonY, okButton)
+        .setDisplaySize(btnWidth, btnHeight)
+        .setInteractive({ useHandCursor: true });
+
+      okBtn.on('pointerup', () => {
+        if (onOk) onOk();
+        container.destroy();
+      });
+
+      container.add(okBtn);
+    }
+
+    if (mode === 'yesno') {
+      const btnWidth = width * 0.4; // 40% of popup width per button
+      const btnHeight = height * 0.2;
+      const spacing = width * 0.05; // space between buttons
+
+      const yesBtn = this.add.image(centerX - (btnWidth / 2 + spacing / 2), buttonY, yesButton)
+        .setDisplaySize(btnWidth, btnHeight)
+        .setInteractive({ useHandCursor: true });
+
+      const noBtn = this.add.image(centerX + (btnWidth / 2 + spacing / 2), buttonY, noButton)
+        .setDisplaySize(btnWidth, btnHeight)
+        .setInteractive({ useHandCursor: true });
+
+      yesBtn.on('pointerup', () => {
+        if (onYes) onYes();
+        container.destroy();
+      });
+
+      noBtn.on('pointerup', () => {
+        if (onNo) onNo();
+        container.destroy();
+      });
+
+      container.add([yesBtn, noBtn]);
+    }
+
+    return container;
   }
 
   //   setupShop() {
@@ -481,6 +614,132 @@ export default class GameScene extends Phaser.Scene {
   //       content.y = Phaser.Math.Clamp(content.y, minY, maxY);
   //     });
   //   }
+
+  setupHome() {
+    const panelWidth = this.contentWidth;
+    const panelHeight = this.contentHeight+200;
+    const startX = 0;
+    const startY = 0;
+
+    const bg = this.add.image(startX, startY-200, 'homeBg').setOrigin(0).setDisplaySize(panelWidth, panelHeight);
+
+    this.homeContainer.add(bg);
+
+    const settingButtons = this.createSettingButtons(startX + 160, startY - 60);
+    this.homeContainer.add(settingButtons);
+
+    const portrait = this.add.image(this.contentWidth / 2, startY + 250, 'portrait_big')
+      .setDisplaySize(360, 360)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true });
+    this.homeContainer.add(portrait);
+
+    // user info (username + token)
+    const usernameText = this.add.text(this.contentWidth / 2, startY + 500, 'Donald Trump', {
+      font: 'bold 40px Inter',
+      color: '#B68B82',
+      align: 'center'
+    }).setOrigin(0.5);
+    this.homeContainer.add(usernameText);
+
+    const userIdText = this.add.text(this.contentWidth / 2, startY + 550, 'ID: 1A2A345678', {
+      font: 'bold 24px Inter',
+      color: '#000000ff',
+      align: 'center'
+    }).setOrigin(0.5);
+    this.homeContainer.add(userIdText);
+
+    const tokenContainer = this.add.container(0, 500);
+
+    const floatingPanelWidth = this.contentWidth - 220;
+    const floatingPanelHeight = 200;
+    const floatingPanelY = startY + 300;
+    const floatingPanelRadius = 20;
+
+    this.addFloatingPanel(
+      tokenContainer,
+      this.contentWidth / 2,
+      floatingPanelY,
+      floatingPanelWidth,
+      floatingPanelHeight,
+      floatingPanelRadius
+    );
+
+    // token info
+    const tokenLabel = this.add.text(this.contentWidth / 6 , startY + 275, 'Token Amount:', {
+      font: '32px Inter',
+      color: '#000000',
+      align: 'left'
+    }).setOrigin(0, 0.5);
+    tokenContainer.add(tokenLabel);
+
+    // deposit button
+    const depositBtn = this.add.image(this.contentWidth - 250 , startY + 300, 'deposit')
+      .setDisplaySize(170, 80)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => {
+        this.openDepositModal();
+      });
+
+    tokenContainer.add(depositBtn);
+    
+    const initialTokenBalance = typeof this.userBalance === 'number'? this.userBalance : (typeof this.balance === 'number' ? this.balance : 0);
+
+    const tokenAmount = this.add.text(this.contentWidth / 6  , startY + 325, currency.format(initialTokenBalance), {
+      font: 'bold 32px Inter',
+      color: '#B68B82',
+      align: 'left'
+    }).setOrigin(0, 0.5);
+    tokenContainer.add(tokenAmount);
+
+    this.homeContainer.add(tokenContainer);
+
+    const hiloMenuButton = this.add.image(this.contentWidth / 2, startY + 1100, 'hilo_menu_button')
+      .setDisplaySize(this.contentWidth - 220, 150)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => {
+        this.createHeader();
+        this.createGameNavButtons();
+        this.homeContainer.setVisible(false);
+        this.hiloContainer.setVisible(true);
+      });
+    this.homeContainer.add(hiloMenuButton);
+
+    const coinFlipMenuButton = this.add.image(this.contentWidth / 2, startY + 1300, 'coinflip_menu_button')
+      .setDisplaySize(this.contentWidth - 220, 150)
+      .setOrigin(0.5)
+      .setInteractive({ useHandCursor: true })
+      .on('pointerup', () => {
+        this.createHeader();
+        this.createGameNavButtons();
+        this.homeContainer.setVisible(false);
+        this.coinFlipContainer.setVisible(true);
+      });
+    this.homeContainer.add(coinFlipMenuButton);
+
+
+    // TEST popup
+
+    // this.createPopup({
+    //   title: 'Oops,So close!',
+    //   message: 'You can do it — give it another shot! 💪',
+    //   mode: 'yesno',
+    //   yesButton: 'btn_deposit',
+    //   noButton: 'btn_no',
+    //   onYes: () => console.log('deposit Clicked'),
+    //   onNo: () => console.log('btn_no Clicked')
+    // });
+
+    this.createPopup({
+      title: 'Title',
+      message: 'Messageeeeeeeeeeeeeeeeeee',
+      mode: 'ok',
+      okButton: 'btn_okay',
+      onOK: () => console.log('btn_okay Clicked')
+    });
+  }
 
   setupHilo() {
     const panelWidth = this.contentWidth;
